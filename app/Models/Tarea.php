@@ -11,7 +11,7 @@ class Tarea extends Model
         'proyecto_id',
         'nombre',
         'descripcion',
-        'asignado_a',
+        'user_id',
         'estado',
         'fecha_inicio',
         'fecha_fin',
@@ -33,10 +33,10 @@ class Tarea extends Model
     }
 
     /**
-     * Relación: Una tarea puede estar asignada a un usuario
+     * Relación: Una tarea pertenece a un usuario (creador)
      */
-    public function asignado(): BelongsTo
+    public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'asignado_a');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

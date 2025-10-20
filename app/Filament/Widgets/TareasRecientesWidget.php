@@ -19,7 +19,7 @@ class TareasRecientesWidget extends TableWidget
         return $table
             ->query(
                 Tarea::query()
-                    ->with(['proyecto', 'asignado'])
+                    ->with(['proyecto', 'usuario'])
                     ->latest()
                     ->limit(10)
             )
@@ -37,12 +37,11 @@ class TareasRecientesWidget extends TableWidget
                     ->sortable()
                     ->icon('heroicon-o-rectangle-stack')
                     ->color('primary'),
-                TextColumn::make('asignado.name')
-                    ->label('Asignado a')
+                TextColumn::make('usuario.name')
+                    ->label('Creado por')
                     ->searchable()
                     ->sortable()
-                    ->icon('heroicon-o-user')
-                    ->placeholder('Sin asignar'),
+                    ->icon('heroicon-o-user'),
                 TextColumn::make('estado')
                     ->label('Estado')
                     ->badge()

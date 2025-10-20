@@ -19,7 +19,7 @@ class KanbanBoard extends Page
 
     public function getTareas()
     {
-        return Tarea::with(['proyecto', 'asignado'])
+        return Tarea::with(['proyecto', 'usuario'])
             ->orderBy('prioridad', 'desc')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -29,7 +29,7 @@ class KanbanBoard extends Page
                 'nombre' => $tarea->nombre,
                 'descripcion' => $tarea->descripcion,
                 'proyecto' => $tarea->proyecto?->nombre,
-                'asignado' => $tarea->asignado?->name,
+                'asignado' => $tarea->usuario?->name,
                 'prioridad' => $tarea->prioridad,
                 'progreso' => $tarea->progreso,
                 'fecha_fin' => $tarea->fecha_fin?->format('d/m/Y'),

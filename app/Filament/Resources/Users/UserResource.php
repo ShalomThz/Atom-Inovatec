@@ -194,77 +194,223 @@ class UserResource extends Resource
                         Tabs\Tab::make('Proyectos')
                             ->icon('heroicon-o-rectangle-stack')
                             ->badge(fn ($record) => $record->proyectos->count())
+                            ->badgeColor(fn ($record) => $record->proyectos->count() > 0 ? 'success' : 'gray')
                             ->schema([
                                 RepeatableEntry::make('proyectos')
                                     ->label('Proyectos Creados')
                                     ->schema([
-                                        Grid::make(3)->schema([
-                                            TextEntry::make('nombre')
-                                                ->label('Nombre del Proyecto')
-                                                ->weight('bold')
-                                                ->size('md')
-                                                ->icon('heroicon-o-rectangle-stack'),
-                                            TextEntry::make('estado')
-                                                ->label('Estado')
-                                                ->badge()
-                                                ->color(fn (string $state): string => match ($state) {
-                                                    'pendiente' => 'gray',
-                                                    'en_progreso' => 'warning',
-                                                    'completado' => 'success',
-                                                    'cancelado' => 'danger',
-                                                    default => 'gray',
-                                                })
-                                                ->formatStateUsing(fn (string $state): string => match ($state) {
-                                                    'pendiente' => 'Pendiente',
-                                                    'en_progreso' => 'En Progreso',
-                                                    'completado' => 'Completado',
-                                                    'cancelado' => 'Cancelado',
-                                                    default => $state,
-                                                }),
-                                            TextEntry::make('prioridad')
-                                                ->label('Prioridad')
-                                                ->badge()
-                                                ->color(fn (int $state): string => match ($state) {
-                                                    1 => 'success',
-                                                    2 => 'info',
-                                                    3 => 'warning',
-                                                    4 => 'danger',
-                                                    default => 'gray',
-                                                })
-                                                ->formatStateUsing(fn (int $state): string => match ($state) {
-                                                    1 => 'Baja',
-                                                    2 => 'Media',
-                                                    3 => 'Alta',
-                                                    4 => 'Urgente',
-                                                    default => 'Desconocida',
-                                                }),
-                                        ]),
-                                        Grid::make(3)->schema([
-                                            TextEntry::make('fecha_inicio')
-                                                ->label('Fecha Inicio')
-                                                ->date('d/m/Y')
-                                                ->icon('heroicon-o-play'),
-                                            TextEntry::make('fecha_fin')
-                                                ->label('Fecha Fin')
-                                                ->date('d/m/Y')
-                                                ->placeholder('Sin fecha')
-                                                ->icon('heroicon-o-flag'),
-                                            TextEntry::make('presupuesto')
-                                                ->label('Presupuesto')
-                                                ->money('USD')
-                                                ->placeholder('No definido'),
-                                        ]),
+                                        // ============================================================
+                                        // ENCABEZADO - Nombre y badges de estado
+                                        // ============================================================
+                                        Section::make()
+                                            ->schema([
+                                                Grid::make(['default' => 1, 'md' => 3])
+                                                    ->schema([
+                                                        TextEntry::make('nombre')
+                                                            ->label('Nombre del Proyecto')
+                                                            ->weight('bold')
+                                                            ->size('lg')
+                                                            ->icon('heroicon-o-rectangle-stack')
+                                                            ->iconColor('primary')
+                                                            ->columnSpan(['default' => 1, 'md' => 1]),
+                                                        TextEntry::make('estado')
+                                                            ->label('Estado')
+                                                            ->badge()
+                                                            ->size('md')
+                                                            ->color(fn (string $state): string => match ($state) {
+                                                                'pendiente' => 'gray',
+                                                                'en_progreso' => 'warning',
+                                                                'completado' => 'success',
+                                                                'cancelado' => 'danger',
+                                                                default => 'gray',
+                                                            })
+                                                            ->formatStateUsing(fn (string $state): string => match ($state) {
+                                                                'pendiente' => '⏳ Pendiente',
+                                                                'en_progreso' => '🔄 En Progreso',
+                                                                'completado' => '✅ Completado',
+                                                                'cancelado' => '❌ Cancelado',
+                                                                default => $state,
+                                                            })
+                                                            ->columnSpan(['default' => 1, 'md' => 1]),
+                                                        TextEntry::make('prioridad')
+                                                            ->label('Prioridad')
+                                                            ->badge()
+                                                            ->size('md')
+                                                            ->color(fn (int $state): string => match ($state) {
+                                                                1 => 'success',
+                                                                2 => 'info',
+                                                                3 => 'warning',
+                                                                4 => 'danger',
+                                                                default => 'gray',
+                                                            })
+                                                            ->formatStateUsing(fn (int $state): string => match ($state) {
+                                                                1 => '⬇️ Baja',
+                                                                2 => '➡️ Media',
+                                                                3 => '⬆️ Alta',
+                                                                4 => '🔥 Urgente',
+                                                                default => 'Desconocida',
+                                                            })
+                                                            ->columnSpan(['default' => 1, 'md' => 1]),
+                                                    ]),
+                                            ])
+                                            ->compact(),
+
+                                        // ============================================================
+                                        // DESCRIPCIÓN
+                                        // ============================================================
+                                        Section::make('Descripción')
+                                            ->description('Resumen del proyecto')
+                                            ->icon('heroicon-o-document-text')
+                                            ->schema([
+                                                TextEntry::make('descripcion')
+                                                    ->hiddenLabel()
+                                                    ->placeholder('Sin descripción disponible')
+                                                    ->prose()
+                                                    ->limit(200)
+                                                    ->tooltip(fn ($state) => strlen($state ?? '') > 200 ? $state : null)
+                                                    ->columnSpanFull(),
+                                            ])
+                                            ->collapsible()
+                                            ->collapsed(false)
+                                            ->compact()
+                                            ->aside(),
+
+                                        // ============================================================
+                                        // CRONOGRAMA Y PRESUPUESTO
+                                        // ============================================================
+                                        Section::make('Cronograma y Presupuesto')
+                                            ->description('Fechas y recursos asignados')
+                                            ->icon('heroicon-o-calendar-days')
+                                            ->schema([
+                                                Grid::make(['default' => 1, 'sm' => 2, 'md' => 4])
+                                                    ->schema([
+                                                        TextEntry::make('fecha_inicio')
+                                                            ->label('Fecha Inicio')
+                                                            ->date('d/m/Y')
+                                                            ->icon('heroicon-o-play')
+                                                            ->iconColor('success')
+                                                            ->placeholder('No definida')
+                                                            ->weight('medium'),
+                                                        TextEntry::make('fecha_fin')
+                                                            ->label('Fecha Fin')
+                                                            ->date('d/m/Y')
+                                                            ->icon('heroicon-o-flag')
+                                                            ->iconColor('danger')
+                                                            ->placeholder('No definida')
+                                                            ->weight('medium')
+                                                            ->color(fn ($record) => $record->fecha_fin && $record->fecha_fin < now() && $record->estado !== 'completado' ? 'danger' : null)
+                                                            ->tooltip(fn ($record) => $record->fecha_fin && $record->fecha_fin < now() && $record->estado !== 'completado' ? '⚠️ Proyecto vencido' : null),
+                                                        TextEntry::make('presupuesto')
+                                                            ->label('Presupuesto')
+                                                            ->money('USD', locale: 'es')
+                                                            ->icon('heroicon-o-currency-dollar')
+                                                            ->iconColor('success')
+                                                            ->placeholder('No definido')
+                                                            ->weight('bold')
+                                                            ->size('md'),
+                                                        TextEntry::make('tareas_count')
+                                                            ->label('Total Tareas')
+                                                            ->state(fn ($record) => $record->tareas->count())
+                                                            ->badge()
+                                                            ->color('info')
+                                                            ->size('md')
+                                                            ->formatStateUsing(fn ($state) => $state . ' tarea' . ($state != 1 ? 's' : '')),
+                                                    ]),
+                                            ])
+                                            ->compact()
+                                            ->aside(),
+
+                                        // ============================================================
+                                        // PROGRESO Y MÉTRICAS
+                                        // ============================================================
+                                        Section::make('Progreso y Métricas')
+                                            ->description('Estado de avance del proyecto')
+                                            ->icon('heroicon-o-chart-bar')
+                                            ->schema([
+                                                Grid::make(['default' => 1, 'sm' => 2, 'md' => 3])
+                                                    ->schema([
+                                                        TextEntry::make('progreso_general')
+                                                            ->label('Progreso General')
+                                                            ->state(function ($record) {
+                                                                $tareas = $record->tareas;
+                                                                if ($tareas->count() === 0) return 0;
+                                                                return round($tareas->avg('progreso'));
+                                                            })
+                                                            ->suffix('%')
+                                                            ->badge()
+                                                            ->size('lg')
+                                                            ->color(fn ($state) => match (true) {
+                                                                $state >= 80 => 'success',
+                                                                $state >= 50 => 'warning',
+                                                                $state >= 20 => 'info',
+                                                                default => 'gray',
+                                                            })
+                                                            ->icon('heroicon-o-chart-pie')
+                                                            ->weight('bold'),
+                                                        TextEntry::make('tareas_completadas')
+                                                            ->label('Tareas Completadas')
+                                                            ->state(fn ($record) => $record->tareas->where('estado', 'completada')->count())
+                                                            ->badge()
+                                                            ->color('success')
+                                                            ->size('md')
+                                                            ->icon('heroicon-o-check-circle')
+                                                            ->formatStateUsing(fn ($state, $record) => $state . ' / ' . $record->tareas->count()),
+                                                        TextEntry::make('tareas_pendientes')
+                                                            ->label('Tareas Pendientes')
+                                                            ->state(fn ($record) => $record->tareas->whereIn('estado', ['pendiente', 'en_progreso'])->count())
+                                                            ->badge()
+                                                            ->size('md')
+                                                            ->color(fn ($state) => $state > 0 ? 'warning' : 'gray')
+                                                            ->icon('heroicon-o-clock')
+                                                            ->formatStateUsing(fn ($state, $record) => $state . ' / ' . $record->tareas->count()),
+                                                    ]),
+                                            ])
+                                            ->visible(fn ($record) => $record->tareas->count() > 0)
+                                            ->compact()
+                                            ->aside(),
+
+                                        // ============================================================
+                                        // AUDITORÍA
+                                        // ============================================================
+                                        Section::make('Información de Auditoría')
+                                            ->description('Registro de cambios')
+                                            ->icon('heroicon-o-clock')
+                                            ->schema([
+                                                Grid::make(['default' => 1, 'md' => 2])
+                                                    ->schema([
+                                                        TextEntry::make('created_at')
+                                                            ->label('Fecha de Creación')
+                                                            ->dateTime('d/m/Y H:i')
+                                                            ->icon('heroicon-o-plus-circle')
+                                                            ->iconColor('success')
+                                                            ->size('sm')
+                                                            ->color('gray'),
+                                                        TextEntry::make('updated_at')
+                                                            ->label('Última Actualización')
+                                                            ->dateTime('d/m/Y H:i')
+                                                            ->icon('heroicon-o-pencil-square')
+                                                            ->iconColor('warning')
+                                                            ->size('sm')
+                                                            ->color('gray')
+                                                            ->since()
+                                                            ->tooltip(fn ($record) => $record->updated_at?->format('d/m/Y H:i:s')),
+                                                    ]),
+                                            ])
+                                            ->collapsible()
+                                            ->collapsed(true)
+                                            ->compact()
+                                            ->aside(),
                                     ])
-                                    ->contained(false)
+                                    ->contained(true)
                                     ->placeholder('No ha creado ningún proyecto'),
                             ]),
 
-                        Tabs\Tab::make('Tareas Asignadas')
+                        Tabs\Tab::make('Tareas Creadas')
                             ->icon('heroicon-o-clipboard-document-list')
-                            ->badge(fn ($record) => $record->tareasAsignadas->count())
+                            ->badge(fn ($record) => $record->tareas->count())
                             ->schema([
-                                RepeatableEntry::make('tareasAsignadas')
-                                    ->label('Tareas Asignadas')
+                                RepeatableEntry::make('tareas')
+                                    ->label('Tareas Creadas')
                                     ->schema([
                                         Grid::make(3)->schema([
                                             TextEntry::make('nombre')

@@ -58,11 +58,12 @@ class TareaResource extends Resource
                         Tabs\Tab::make('Asignación')
                             ->icon('heroicon-o-user')
                             ->schema([
-                                Select::make('asignado_a')
-                                    ->relationship('asignado', 'name')
+                                Select::make('user_id')
+                                    ->relationship('usuario', 'name')
                                     ->searchable()
                                     ->preload()
-                                    ->label('Asignado a')
+                                    ->required()
+                                    ->label('Creado por')
                                     ->placeholder('Seleccione un usuario'),
                             ]),
 
@@ -173,21 +174,19 @@ class TareaResource extends Resource
                                     ->compact(),
                             ]),
 
-                        Tabs\Tab::make('Asignación')
+                        Tabs\Tab::make('Creador')
                             ->icon('heroicon-o-user')
                             ->schema([
-                                Section::make('Usuario Asignado')
+                                Section::make('Usuario Creador')
                                     ->icon('heroicon-o-user-circle')
                                     ->schema([
-                                        TextEntry::make('asignado.name')
+                                        TextEntry::make('usuario.name')
                                             ->label('Nombre')
-                                            ->placeholder('Sin asignar')
                                             ->icon('heroicon-o-user')
                                             ->iconColor('primary')
                                             ->size('md'),
-                                        TextEntry::make('asignado.email')
+                                        TextEntry::make('usuario.email')
                                             ->label('Email')
-                                            ->placeholder('Sin asignar')
                                             ->icon('heroicon-o-envelope')
                                             ->copyable()
                                             ->copyMessage('Email copiado')
@@ -320,8 +319,9 @@ class TareaResource extends Resource
                     ->searchable(),
                 TextColumn::make('nombre')
                     ->searchable(),
-                TextColumn::make('asignado_a')
-                    ->numeric()
+                TextColumn::make('usuario.name')
+                    ->label('Creado por')
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('estado')
                     ->searchable(),

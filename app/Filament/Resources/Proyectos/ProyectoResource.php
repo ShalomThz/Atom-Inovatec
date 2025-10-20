@@ -113,8 +113,8 @@ class ProyectoResource extends Resource
                                         Textarea::make('descripcion')
                                             ->rows(2)
                                             ->columnSpanFull(),
-                                        Select::make('asignado_a')
-                                            ->relationship('asignado', 'name')
+                                        Select::make('user_id')
+                                            ->relationship('usuario', 'name')
                                             ->searchable()
                                             ->preload()
                                             ->label('Asignado a'),
@@ -328,7 +328,7 @@ class ProyectoResource extends Resource
                                             ]),
                                         Grid::make(3)
                                             ->schema([
-                                                TextEntry::make('asignado.name')
+                                                TextEntry::make('usuario.name')
                                                     ->label('Asignado a')
                                                     ->icon('heroicon-o-user')
                                                     ->placeholder('Sin asignar'),

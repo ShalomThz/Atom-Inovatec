@@ -61,10 +61,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Relación: Un usuario tiene muchas tareas asignadas
+     * Relación: Un usuario tiene muchas tareas creadas
      */
-    public function tareasAsignadas(): HasMany
+    public function tareas(): HasMany
     {
-        return $this->hasMany(Tarea::class, 'asignado_a');
+        return $this->hasMany(Tarea::class);
     }
 }
