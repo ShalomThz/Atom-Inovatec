@@ -17,7 +17,7 @@ class ProyectoPolicy
      */
     public function viewAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ver_proyectos');
+        return $authUser->can('view_any_proyecto');
     }
 
     /**
@@ -25,7 +25,7 @@ class ProyectoPolicy
      */
     public function view(AuthUser $authUser, Proyecto $proyecto): bool
     {
-        return $authUser->can('ver_proyectos');
+        return $authUser->can('view_proyecto');
     }
 
     /**
@@ -33,7 +33,7 @@ class ProyectoPolicy
      */
     public function create(AuthUser $authUser): bool
     {
-        return $authUser->can('crear_proyectos');
+        return $authUser->can('create_proyecto');
     }
 
     /**
@@ -41,7 +41,7 @@ class ProyectoPolicy
      */
     public function update(AuthUser $authUser, Proyecto $proyecto): bool
     {
-        return $authUser->can('editar_proyectos');
+        return $authUser->can('update_proyecto');
     }
 
     /**
@@ -49,7 +49,7 @@ class ProyectoPolicy
      */
     public function delete(AuthUser $authUser, Proyecto $proyecto): bool
     {
-        return $authUser->can('eliminar_proyectos');
+        return $authUser->can('delete_proyecto');
     }
 
     /**
@@ -57,7 +57,7 @@ class ProyectoPolicy
      */
     public function restore(AuthUser $authUser, Proyecto $proyecto): bool
     {
-        return $authUser->can('eliminar_proyectos'); // Same permission as delete
+        return $authUser->can('restore_proyecto');
     }
 
     /**
@@ -65,7 +65,7 @@ class ProyectoPolicy
      */
     public function forceDelete(AuthUser $authUser, Proyecto $proyecto): bool
     {
-        return $authUser->can('eliminar_proyectos');
+        return $authUser->can('force_delete_proyecto');
     }
 
     /**
@@ -73,7 +73,7 @@ class ProyectoPolicy
      */
     public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('eliminar_proyectos');
+        return $authUser->can('force_delete_any_proyecto');
     }
 
     /**
@@ -81,7 +81,7 @@ class ProyectoPolicy
      */
     public function restoreAny(AuthUser $authUser): bool
     {
-        return $authUser->can('eliminar_proyectos');
+        return $authUser->can('restore_any_proyecto');
     }
 
     /**
@@ -89,7 +89,7 @@ class ProyectoPolicy
      */
     public function replicate(AuthUser $authUser, Proyecto $proyecto): bool
     {
-        return $authUser->can('crear_proyectos');
+        return $authUser->can('replicate_proyecto');
     }
 
     /**
@@ -97,7 +97,7 @@ class ProyectoPolicy
      */
     public function reorder(AuthUser $authUser): bool
     {
-        return $authUser->can('editar_proyectos');
+        return $authUser->can('reorder_proyecto');
     }
 
 }

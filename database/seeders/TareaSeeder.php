@@ -25,7 +25,7 @@ class TareaSeeder extends Seeder
                     'proyecto_id' => $proyecto1->id,
                     'nombre' => 'Diseño de wireframes y mockups',
                     'descripcion' => 'Crear wireframes de baja fidelidad y mockups de alta fidelidad para todas las páginas del sitio web',
-                    'user_id' => $usuarios[7]->id, // Pedro López (Diseñador)
+                    'user_id' => $usuarios[6]->id, // Laura Sánchez (Desarrollador)
                     'estado' => 'completada',
                     'fecha_inicio' => now()->subMonths(3),
                     'fecha_fin' => now()->subMonths(2)->subWeeks(2),
@@ -80,7 +80,7 @@ class TareaSeeder extends Seeder
                     'proyecto_id' => $proyecto1->id,
                     'nombre' => 'Testing y control de calidad',
                     'descripcion' => 'Realizar pruebas de funcionalidad, compatibilidad cross-browser y performance',
-                    'user_id' => $usuarios[9]->id, // Miguel Ramírez (Tester)
+                    'user_id' => $usuarios[5]->id, // Luis Fernández (Desarrollador)
                     'estado' => 'pendiente',
                     'fecha_inicio' => now()->addMonths(2)->addWeeks(2),
                     'fecha_fin' => now()->addMonths(3),
@@ -190,7 +190,7 @@ class TareaSeeder extends Seeder
                     'proyecto_id' => $proyecto3->id,
                     'nombre' => 'Diseño UI/UX de la aplicación',
                     'descripcion' => 'Diseñar interfaz de usuario siguiendo Material Design y Human Interface Guidelines',
-                    'user_id' => $usuarios[8]->id, // Sofía Torres
+                    'user_id' => $usuarios[4]->id, // Ana Martínez (Desarrollador)
                     'estado' => 'completada',
                     'fecha_inicio' => now()->subMonths(2),
                     'fecha_fin' => now()->subMonth()->subWeeks(2),
@@ -256,7 +256,7 @@ class TareaSeeder extends Seeder
                     'proyecto_id' => $proyecto3->id,
                     'nombre' => 'Testing y deployment',
                     'descripcion' => 'Pruebas en dispositivos reales y publicación en App Store y Google Play',
-                    'user_id' => $usuarios[9]->id, // Miguel Ramírez
+                    'user_id' => $usuarios[6]->id, // Laura Sánchez (Desarrollador)
                     'estado' => 'pendiente',
                     'fecha_inicio' => now()->addMonths(6),
                     'fecha_fin' => now()->addMonths(7),

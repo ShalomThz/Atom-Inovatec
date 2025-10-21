@@ -17,7 +17,7 @@ class TareaPolicy
      */
     public function viewAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ver_tareas');
+        return $authUser->can('view_any_tarea');
     }
 
     /**
@@ -25,7 +25,7 @@ class TareaPolicy
      */
     public function view(AuthUser $authUser, Tarea $tarea): bool
     {
-        return $authUser->can('ver_tareas');
+        return $authUser->can('view_tarea');
     }
 
     /**
@@ -33,7 +33,7 @@ class TareaPolicy
      */
     public function create(AuthUser $authUser): bool
     {
-        return $authUser->can('crear_tareas');
+        return $authUser->can('create_tarea');
     }
 
     /**
@@ -41,7 +41,7 @@ class TareaPolicy
      */
     public function update(AuthUser $authUser, Tarea $tarea): bool
     {
-        return $authUser->can('editar_tareas');
+        return $authUser->can('update_tarea');
     }
 
     /**
@@ -49,7 +49,7 @@ class TareaPolicy
      */
     public function delete(AuthUser $authUser, Tarea $tarea): bool
     {
-        return $authUser->can('eliminar_tareas');
+        return $authUser->can('delete_tarea');
     }
 
     /**
@@ -57,7 +57,7 @@ class TareaPolicy
      */
     public function restore(AuthUser $authUser, Tarea $tarea): bool
     {
-        return $authUser->can('eliminar_tareas'); // Same permission as delete
+        return $authUser->can('restore_tarea');
     }
 
     /**
@@ -65,7 +65,7 @@ class TareaPolicy
      */
     public function forceDelete(AuthUser $authUser, Tarea $tarea): bool
     {
-        return $authUser->can('eliminar_tareas');
+        return $authUser->can('force_delete_tarea');
     }
 
     /**
@@ -73,7 +73,7 @@ class TareaPolicy
      */
     public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('eliminar_tareas');
+        return $authUser->can('force_delete_any_tarea');
     }
 
     /**
@@ -81,7 +81,7 @@ class TareaPolicy
      */
     public function restoreAny(AuthUser $authUser): bool
     {
-        return $authUser->can('eliminar_tareas');
+        return $authUser->can('restore_any_tarea');
     }
 
     /**
@@ -89,7 +89,7 @@ class TareaPolicy
      */
     public function replicate(AuthUser $authUser, Tarea $tarea): bool
     {
-        return $authUser->can('crear_tareas');
+        return $authUser->can('replicate_tarea');
     }
 
     /**
@@ -97,7 +97,7 @@ class TareaPolicy
      */
     public function reorder(AuthUser $authUser): bool
     {
-        return $authUser->can('editar_tareas');
+        return $authUser->can('reorder_tarea');
     }
 
 }

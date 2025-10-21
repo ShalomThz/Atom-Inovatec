@@ -85,70 +85,7 @@ class UserSeeder extends Seeder
         $laura->assignRole('desarrollador');
         $this->command->info('✓ Laura Sánchez (desarrollador)');
 
-        // ============================================================
-        // DISEÑADORES
-        // ============================================================
-        $pedro = User::create([
-            'name' => 'Pedro López',
-            'email' => 'pedro.lopez@atominovatec.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $pedro->assignRole('disenador');
-        $this->command->info('✓ Pedro López (disenador)');
-
-        $sofia = User::create([
-            'name' => 'Sofía Torres',
-            'email' => 'sofia.torres@atominovatec.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $sofia->assignRole('disenador');
-        $this->command->info('✓ Sofía Torres (disenador)');
-
-        // ============================================================
-        // TESTER/QA
-        // ============================================================
-        $miguel = User::create([
-            'name' => 'Miguel Ramírez',
-            'email' => 'miguel.ramirez@atominovatec.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $miguel->assignRole('tester');
-        $this->command->info('✓ Miguel Ramírez (tester)');
-
-        // ============================================================
-        // USUARIOS ADICIONALES CON OTROS ROLES
-        // ============================================================
-        $scrumMaster = User::create([
-            'name' => 'Roberto Gómez',
-            'email' => 'roberto.gomez@atominovatec.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $scrumMaster->assignRole('scrum_master');
-        $this->command->info('✓ Roberto Gómez (scrum_master)');
-
-        $productOwner = User::create([
-            'name' => 'Elena Vargas',
-            'email' => 'elena.vargas@atominovatec.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $productOwner->assignRole('product_owner');
-        $this->command->info('✓ Elena Vargas (product_owner)');
-
-        $stakeholder = User::create([
-            'name' => 'Cliente Externo',
-            'email' => 'cliente@empresa.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $stakeholder->assignRole('stakeholder');
-        $this->command->info('✓ Cliente Externo (stakeholder)');
-
         $this->command->newLine();
-        $this->command->info('✅ 13 usuarios creados y roles asignados');
+        $this->command->info('✅ 7 usuarios creados y roles asignados');
     }
 }

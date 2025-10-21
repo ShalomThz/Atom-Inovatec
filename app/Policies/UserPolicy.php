@@ -15,7 +15,7 @@ class UserPolicy
      */
     public function viewAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ver_usuarios');
+        return $authUser->can('view_any_user');
     }
 
     /**
@@ -23,7 +23,7 @@ class UserPolicy
      */
     public function view(AuthUser $authUser, User $user): bool
     {
-        return $authUser->can('ver_usuarios');
+        return $authUser->can('view_user');
     }
 
     /**
@@ -31,7 +31,7 @@ class UserPolicy
      */
     public function create(AuthUser $authUser): bool
     {
-        return $authUser->can('crear_usuarios');
+        return $authUser->can('create_user');
     }
 
     /**
@@ -39,7 +39,7 @@ class UserPolicy
      */
     public function update(AuthUser $authUser, User $user): bool
     {
-        return $authUser->can('editar_usuarios');
+        return $authUser->can('update_user');
     }
 
     /**
@@ -47,7 +47,7 @@ class UserPolicy
      */
     public function delete(AuthUser $authUser, User $user): bool
     {
-        return $authUser->can('eliminar_usuarios');
+        return $authUser->can('delete_user');
     }
 
     /**
@@ -55,7 +55,7 @@ class UserPolicy
      */
     public function restore(AuthUser $authUser, User $user): bool
     {
-        return $authUser->can('eliminar_usuarios'); // Same permission as delete
+        return $authUser->can('restore_user');
     }
 
     /**
@@ -63,7 +63,7 @@ class UserPolicy
      */
     public function forceDelete(AuthUser $authUser, User $user): bool
     {
-        return $authUser->can('eliminar_usuarios');
+        return $authUser->can('force_delete_user');
     }
 
     /**
@@ -71,7 +71,7 @@ class UserPolicy
      */
     public function forceDeleteAny(AuthUser $authUser): bool
     {
-        return $authUser->can('eliminar_usuarios');
+        return $authUser->can('force_delete_any_user');
     }
 
     /**
@@ -79,7 +79,7 @@ class UserPolicy
      */
     public function restoreAny(AuthUser $authUser): bool
     {
-        return $authUser->can('eliminar_usuarios');
+        return $authUser->can('restore_any_user');
     }
 
     /**
@@ -87,7 +87,7 @@ class UserPolicy
      */
     public function replicate(AuthUser $authUser, User $user): bool
     {
-        return $authUser->can('crear_usuarios');
+        return $authUser->can('replicate_user');
     }
 
     /**
@@ -95,7 +95,7 @@ class UserPolicy
      */
     public function reorder(AuthUser $authUser): bool
     {
-        return $authUser->can('editar_usuarios');
+        return $authUser->can('reorder_user');
     }
 
 }
