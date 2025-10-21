@@ -99,8 +99,8 @@ return [
     */
 
     'permissions' => [
-        'separator' => ':',
-        'case' => 'pascal',
+        'separator' => '_',
+        'case' => 'snake',
         'generate' => true,
     ],
 
