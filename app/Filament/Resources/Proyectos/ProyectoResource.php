@@ -25,12 +25,40 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class ProyectoResource extends Resource
 {
     protected static ?string $model = Proyecto::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        // Si es super admin, ver todos los proyectos
+        if ($user->hasRole('super_admin')) {
+            return $query;
+        }
+
+        // Si es líder de proyecto, ver solo los proyectos que él creó
+        if ($user->hasRole('lider_proyecto')) {
+            return $query->where('user_id', $user->id);
+        }
+
+        // Si es desarrollador, ver solo proyectos donde tiene tareas asignadas
+        if ($user->hasRole('desarrollador')) {
+            return $query->whereHas('tareas', function (Builder $query) use ($user) {
+                $query->where('user_id', $user->id);
+            });
+        }
+
+        // Por defecto, no mostrar nada si no tiene rol definido
+        return $query->whereRaw('1 = 0');
+    }
 
     public static function form(Schema $schema): Schema
     {

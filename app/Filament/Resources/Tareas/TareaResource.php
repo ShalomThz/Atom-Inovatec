@@ -23,12 +23,40 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class TareaResource extends Resource
 {
     protected static ?string $model = Tarea::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = Auth::user();
+
+        // Si es super admin, ver todas las tareas
+        if ($user->hasRole('super_admin')) {
+            return $query;
+        }
+
+        // Si es líder de proyecto, ver tareas de los proyectos que él creó
+        if ($user->hasRole('lider_proyecto')) {
+            return $query->whereHas('proyecto', function (Builder $query) use ($user) {
+                $query->where('user_id', $user->id);
+            });
+        }
+
+        // Si es desarrollador, ver solo sus propias tareas
+        if ($user->hasRole('desarrollador')) {
+            return $query->where('user_id', $user->id);
+        }
+
+        // Por defecto, no mostrar nada si no tiene rol definido
+        return $query->whereRaw('1 = 0');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -40,7 +68,32 @@ class TareaResource extends Resource
                             ->icon('heroicon-o-information-circle')
                             ->schema([
                                 Select::make('proyecto_id')
-                                    ->relationship('proyecto', 'nombre')
+                                    ->relationship(
+                                        name: 'proyecto',
+                                        titleAttribute: 'nombre',
+                                        modifyQueryUsing: function (Builder $query) {
+                                            $user = Auth::user();
+
+                                            // Si es super admin, ver todos los proyectos
+                                            if ($user->hasRole('super_admin')) {
+                                                return $query;
+                                            }
+
+                                            // Si es líder de proyecto, ver solo sus proyectos
+                                            if ($user->hasRole('lider_proyecto')) {
+                                                return $query->where('user_id', $user->id);
+                                            }
+
+                                            // Si es desarrollador, ver proyectos donde tiene tareas
+                                            if ($user->hasRole('desarrollador')) {
+                                                return $query->whereHas('tareas', function (Builder $q) use ($user) {
+                                                    $q->where('user_id', $user->id);
+                                                });
+                                            }
+
+                                            return $query->whereRaw('1 = 0');
+                                        }
+                                    )
                                     ->required()
                                     ->searchable()
                                     ->preload()
