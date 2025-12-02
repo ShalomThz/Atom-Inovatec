@@ -8,6 +8,7 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
+    closestCorners,
 } from '@dnd-kit/core';
 import KanbanColumn from './KanbanColumn';
 import KanbanCard from './KanbanCard';
@@ -27,7 +28,7 @@ interface Tarea {
 interface TareasAgrupadas {
     pendiente?: Tarea[];
     en_progreso?: Tarea[];
-    completado?: Tarea[];
+    completada?: Tarea[];
 }
 
 interface KanbanBoardProps {
@@ -63,7 +64,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialTareas, onUpdateEstado
         setActiveTarea(tarea);
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (!over) {
@@ -72,7 +73,30 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialTareas, onUpdateEstado
         }
 
         const tareaId = active.id as number;
-        const nuevoEstado = over.id as string;
+        let nuevoEstado: string;
+
+        // Bug Fix #1 & #5: Verificar si over.id es una columna (string) o una tarjeta (number)
+        if (typeof over.id === 'string') {
+            // Drop directo sobre la columna
+            nuevoEstado = over.id;
+        } else {
+            // Drop sobre otra tarjeta - buscar la columna que contiene esa tarjeta
+            const overTareaId = over.id as number;
+            let foundEstado: string | null = null;
+
+            Object.entries(tareas).forEach(([estado, tareasArray]) => {
+                if (tareasArray?.find((t) => t.id === overTareaId)) {
+                    foundEstado = estado;
+                }
+            });
+
+            if (!foundEstado) {
+                setActiveTarea(null);
+                return;
+            }
+
+            nuevoEstado = foundEstado;
+        }
 
         // Encontrar el estado actual de la tarea
         let estadoActual: string | null = null;
@@ -83,6 +107,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialTareas, onUpdateEstado
         });
 
         if (estadoActual && estadoActual !== nuevoEstado) {
+            // Guardar el estado anterior para rollback
+            const previousTareas = { ...tareas };
+
             // Actualizar el estado local inmediatamente para una mejor UX
             setTareas((prev) => {
                 const newTareas = { ...prev };
@@ -110,8 +137,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialTareas, onUpdateEstado
                 return newTareas;
             });
 
-            // Llamar al callback para actualizar en el backend
-            onUpdateEstado(tareaId, nuevoEstado);
+            // Bug Fix #3: Llamar al callback con manejo de errores y rollback
+            try {
+                await onUpdateEstado(tareaId, nuevoEstado);
+            } catch (error) {
+                console.error('Error al actualizar tarea, revirtiendo cambios:', error);
+                // Rollback al estado anterior
+                setTareas(previousTareas);
+            }
         }
 
         setActiveTarea(null);
@@ -141,6 +174,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialTareas, onUpdateEstado
     return (
         <DndContext
             sensors={sensors}
+            collisionDetection={closestCorners}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
