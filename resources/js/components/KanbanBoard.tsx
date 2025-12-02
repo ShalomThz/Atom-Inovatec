@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     DndContext,
     DragEndEvent,
@@ -39,6 +39,43 @@ interface KanbanBoardProps {
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialTareas, onUpdateEstado }) => {
     const [tareas, setTareas] = useState<TareasAgrupadas>(initialTareas);
     const [activeTarea, setActiveTarea] = useState<Tarea | null>(null);
+    const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+
+    // Detectar el tema actual
+    useEffect(() => {
+        const checkDarkMode = () => {
+            // Priorizar la clase 'dark' de Filament sobre la preferencia del sistema
+            const hasDarkClass = document.documentElement.classList.contains('dark');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            // Solo usar prefersDark si Filament no tiene una clase específica de tema
+            // Filament maneja su propio tema, así que priorizamos hasDarkClass
+            const isDark = hasDarkClass;
+
+            console.log('🎨 Kanban Theme Detection:', { hasDarkClass, prefersDark, isDark, source: hasDarkClass ? 'Filament' : 'System' });
+            setIsDarkMode(isDark);
+        };
+
+        // Verificar al cargar
+        checkDarkMode();
+
+        // Escuchar cambios en el tema del sistema
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => checkDarkMode();
+        mediaQuery.addEventListener('change', handleChange);
+
+        // Observar cambios en la clase 'dark' del documento
+        const observer = new MutationObserver(checkDarkMode);
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+
+        return () => {
+            mediaQuery.removeEventListener('change', handleChange);
+            observer.disconnect();
+        };
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -154,19 +191,19 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialTareas, onUpdateEstado
         {
             id: 'pendiente',
             title: 'Tareas Pendientes',
-            color: 'rgb(156, 163, 175)',
+            color: isDarkMode ? 'rgb(107, 114, 128)' : 'rgb(156, 163, 175)', // gray-500 dark : gray-400 light
             tasks: tareas.pendiente || [],
         },
         {
             id: 'en_progreso',
             title: 'Tareas en Progreso',
-            color: 'rgb(251, 191, 36)',
+            color: isDarkMode ? 'rgb(245, 158, 11)' : 'rgb(251, 191, 36)', // amber-500 dark : amber-400 light
             tasks: tareas.en_progreso || [],
         },
         {
             id: 'completada',
             title: 'Tareas Finalizadas',
-            color: 'rgb(34, 197, 94)',
+            color: isDarkMode ? 'rgb(34, 197, 94)' : 'rgb(74, 222, 128)', // green-500 dark : green-400 light
             tasks: tareas.completada || [],
         },
     ];

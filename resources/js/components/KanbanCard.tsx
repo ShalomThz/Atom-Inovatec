@@ -29,6 +29,20 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ tarea, isDragging = false }) =>
         transition,
     };
 
+    const getIniciales = (nombre: string) => {
+        const palabras = nombre.trim().split(/\s+/);
+
+        if (palabras.length === 1) {
+            // Solo un nombre: primera letra
+            return palabras[0].charAt(0).toUpperCase();
+        } else {
+            // Nombre y apellido: primera letra de cada uno
+            const primeraLetra = palabras[0].charAt(0).toUpperCase();
+            const segundaLetra = palabras[1].charAt(0).toUpperCase();
+            return primeraLetra + segundaLetra;
+        }
+    };
+
     const getPrioridadColor = (prioridad: string) => {
         switch (prioridad) {
             case 'alta':
@@ -126,12 +140,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ tarea, isDragging = false }) =>
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                 {tarea.asignado ? (
                     <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-                            <span className="text-xs font-bold text-white">
-                                {tarea.asignado.charAt(0).toUpperCase()}
-                            </span>
-                        </div>
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
                             {tarea.asignado}
                         </span>
                     </div>

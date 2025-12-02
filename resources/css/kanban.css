@@ -38,11 +38,12 @@
 .kanban-column {
     display: flex;
     flex-direction: column;
-    background-color: rgb(249, 250, 251);
+    background-color: rgb(243, 244, 246) !important; /* gray-100 - más contraste en tema claro */
     border-radius: 0.75rem;
     padding: 1.25rem;
     min-height: 500px;
     transition: background-color 0.2s ease;
+    border: 1px solid rgb(229, 231, 235) !important; /* gray-200 */
 }
 
 /* Columna en modo drag over */
@@ -117,13 +118,13 @@
 
 /* Card individual */
 .kanban-card {
-    background: white;
+    background: rgb(255, 255, 255) !important; /* white - tema claro */
     border-radius: 0.75rem;
     padding: 1rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
     cursor: grab;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgb(229, 231, 235);
+    border: 1px solid rgb(229, 231, 235) !important; /* gray-200 */
     position: relative;
     overflow: hidden;
 }
@@ -307,6 +308,10 @@
     line-height: 1rem !important;
 }
 
+.kanban-card .leading-none {
+    line-height: 1 !important;
+}
+
 .kanban-card .font-medium {
     font-weight: 500 !important;
 }
@@ -478,136 +483,101 @@
     }
 }
 
-/* Modo oscuro */
-@media (prefers-color-scheme: dark) {
-    .kanban-column {
-        background-color: rgb(31, 41, 55);
-    }
-
-    .kanban-column-drag-over {
-        background-color: rgb(30, 41, 59);
-        border-color: rgb(129, 140, 248);
-    }
-
-    .kanban-column-header {
-        border-bottom-color: rgb(55, 65, 81);
-    }
-
-    .kanban-column-title {
-        color: rgb(243, 244, 246);
-    }
-
-    .kanban-card {
-        background-color: rgb(17, 24, 39);
-        border-color: rgb(31, 41, 55);
-    }
-
-    .kanban-card:hover {
-        border-color: rgb(55, 65, 81);
-    }
-
-    .kanban-card-title {
-        color: rgb(243, 244, 246) !important;
-    }
-
-    .kanban-card-description {
-        color: rgb(156, 163, 175) !important;
-    }
-
-    .kanban-progress-bar {
-        background-color: rgb(55, 65, 81);
-    }
-
-    .kanban-cards-container::-webkit-scrollbar-thumb {
-        background: rgb(75, 85, 99);
-    }
-
-    .kanban-cards-container::-webkit-scrollbar-thumb:hover {
-        background: rgb(107, 114, 128);
-    }
-
-    .kanban-card .bg-gray-50 {
-        background-color: rgb(31, 41, 55) !important;
-    }
-
-    .kanban-card .bg-blue-50 {
-        background-color: rgba(30, 64, 175, 0.2) !important;
-    }
-
-    .kanban-card .bg-gray-200 {
-        background-color: rgb(55, 65, 81) !important;
-    }
-
-    .kanban-card .text-gray-500 {
-        color: rgb(156, 163, 175) !important;
-    }
-
-    .kanban-card .text-gray-600 {
-        color: rgb(156, 163, 175) !important;
-    }
-
-    .kanban-card .text-gray-700 {
-        color: rgb(209, 213, 219) !important;
-    }
-
-    .kanban-card .text-gray-900 {
-        color: rgb(243, 244, 246) !important;
-    }
-
-    .kanban-card .text-gray-400 {
-        color: rgb(156, 163, 175) !important;
-    }
-
-    .kanban-card .text-blue-600 {
-        color: rgb(96, 165, 250) !important;
-    }
-
-    .kanban-card .text-blue-700 {
-        color: rgb(147, 197, 253) !important;
-    }
-
-    .kanban-card .border-gray-100 {
-        border-color: rgb(55, 65, 81) !important;
-    }
-}
+/* Modo oscuro - Deshabilitado para usar solo la clase .dark de Filament */
+/* @media (prefers-color-scheme: dark) está comentado para que solo sincronice con Filament */
 
 /* Utilidades para el modo oscuro forzado con clase .dark */
 .dark .kanban-column {
-    background-color: rgb(31, 41, 55);
+    background-color: rgb(17, 24, 39) !important; /* gray-900 - más oscuro */
+    border-color: rgb(31, 41, 55) !important; /* gray-800 */
 }
 
 .dark .kanban-column-drag-over {
-    background-color: rgb(30, 41, 59);
-    border-color: rgb(129, 140, 248);
+    background-color: rgb(30, 41, 59) !important; /* slate-800 */
+    border-color: rgb(129, 140, 248) !important; /* indigo-400 */
 }
 
 .dark .kanban-column-header {
-    border-bottom-color: rgb(55, 65, 81);
+    border-bottom-color: rgb(55, 65, 81) !important; /* gray-700 */
 }
 
 .dark .kanban-column-title {
-    color: rgb(243, 244, 246);
+    color: rgb(243, 244, 246) !important; /* gray-100 */
 }
 
 .dark .kanban-card {
-    background-color: rgb(17, 24, 39);
-    border-color: rgb(31, 41, 55);
+    background-color: rgb(31, 41, 55) !important; /* gray-800 - más claro que columna */
+    border-color: rgb(55, 65, 81) !important; /* gray-700 */
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2) !important;
 }
 
 .dark .kanban-card:hover {
-    border-color: rgb(55, 65, 81);
+    border-color: rgb(75, 85, 99) !important; /* gray-600 */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
 }
 
 .dark .kanban-card-title {
-    color: rgb(243, 244, 246);
+    color: rgb(243, 244, 246) !important;
 }
 
 .dark .kanban-card-description {
-    color: rgb(156, 163, 175);
+    color: rgb(156, 163, 175) !important;
 }
 
 .dark .kanban-progress-bar {
-    background-color: rgb(55, 65, 81);
+    background-color: rgb(55, 65, 81) !important;
+}
+
+.dark .kanban-cards-container::-webkit-scrollbar-thumb {
+    background: rgb(75, 85, 99) !important;
+}
+
+.dark .kanban-cards-container::-webkit-scrollbar-thumb:hover {
+    background: rgb(107, 114, 128) !important;
+}
+
+.dark .kanban-card .bg-gray-50 {
+    background-color: rgb(31, 41, 55) !important;
+}
+
+.dark .kanban-card .bg-blue-50 {
+    background-color: rgba(30, 64, 175, 0.2) !important;
+}
+
+.dark .kanban-card .bg-gray-200 {
+    background-color: rgb(55, 65, 81) !important;
+}
+
+.dark .kanban-card .text-gray-500 {
+    color: rgb(156, 163, 175) !important;
+}
+
+.dark .kanban-card .text-gray-600 {
+    color: rgb(156, 163, 175) !important;
+}
+
+.dark .kanban-card .text-gray-700 {
+    color: rgb(209, 213, 219) !important;
+}
+
+.dark .kanban-card .text-gray-900 {
+    color: rgb(243, 244, 246) !important;
+}
+
+.dark .kanban-card .text-gray-400 {
+    color: rgb(156, 163, 175) !important;
+}
+
+.dark .kanban-card .text-blue-600 {
+    color: rgb(96, 165, 250) !important;
+}
+
+.dark .kanban-card .text-blue-700 {
+    color: rgb(147, 197, 253) !important;
+}
+
+.dark .kanban-card .border-gray-100 {
+    border-color: rgb(55, 65, 81) !important;
 }
 
 /* Animaciones de entrada */
