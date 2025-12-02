@@ -83,6 +83,8 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
                             <Button
                                 type="submit"
+                                variant="gradient"
+                                size="lg"
                                 className="mt-4 w-full"
                                 tabIndex={4}
                                 disabled={processing}

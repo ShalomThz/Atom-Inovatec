@@ -10,7 +10,15 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
+        return Inertia::render('dashboard', [
+            'stats' => [
+                'users' => \App\Models\User::count(),
+                'projects' => \App\Models\Proyecto::count(),
+                'tasks' => \App\Models\Tarea::count(),
+                'completed_tasks' => \App\Models\Tarea::where('estado', 'completada')->count(), // Assuming 'estado' column exists
+            ],
+            'recent_projects' => \App\Models\Proyecto::latest()->take(5)->get(),
+        ]);
     })->name('dashboard');
 });
 
@@ -26,5 +34,5 @@ Route::middleware(['auth'])->group(function () {
     })->name('kanban.update-tarea');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';
