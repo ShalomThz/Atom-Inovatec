@@ -23,7 +23,11 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\Layout\Split;
+use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -40,24 +44,20 @@ class TareaResource extends Resource
         $query = parent::getEloquentQuery();
         $user = Auth::user();
 
-        // Si es super admin, ver todas las tareas
         if ($user->hasRole('super_admin')) {
             return $query;
         }
 
-        // Si es líder de proyecto, ver tareas de los proyectos que él creó
         if ($user->hasRole('lider_proyecto')) {
             return $query->whereHas('proyecto', function (Builder $query) use ($user) {
                 $query->where('user_id', $user->id);
             });
         }
 
-        // Si es desarrollador, ver solo sus propias tareas
         if ($user->hasRole('desarrollador')) {
             return $query->where('user_id', $user->id);
         }
 
-        // Por defecto, no mostrar nada si no tiene rol definido
         return $query->whereRaw('1 = 0');
     }
 
@@ -76,24 +76,17 @@ class TareaResource extends Resource
                                         titleAttribute: 'nombre',
                                         modifyQueryUsing: function (Builder $query) {
                                             $user = Auth::user();
-
-                                            // Si es super admin, ver todos los proyectos
                                             if ($user->hasRole('super_admin')) {
                                                 return $query;
                                             }
-
-                                            // Si es líder de proyecto, ver solo sus proyectos
                                             if ($user->hasRole('lider_proyecto')) {
                                                 return $query->where('user_id', $user->id);
                                             }
-
-                                            // Si es desarrollador, ver proyectos donde tiene tareas
                                             if ($user->hasRole('desarrollador')) {
                                                 return $query->whereHas('tareas', function (Builder $q) use ($user) {
                                                     $q->where('user_id', $user->id);
                                                 });
                                             }
-
                                             return $query->whereRaw('1 = 0');
                                         }
                                     )
@@ -128,7 +121,8 @@ class TareaResource extends Resource
                                     ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
                                 Textarea::make('reasignacion_motivo')
                                     ->label('Motivo de Reasignación (si aplica)')
-                                    ->rows(4),
+                                    ->rows(4)
+                                    ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
                             ]),
 
                         Tabs\Tab::make('Fechas y Estado')
@@ -215,142 +209,9 @@ class TareaResource extends Resource
                                                 ->placeholder('Sin descripción')
                                                 ->columnSpanFull(),
                                         ]),
-                                        Grid::make(['default' => 1, 'md' => 2])->schema([
-                                            TextEntry::make('proyecto.estado')
-                                                ->label('Estado del Proyecto')
-                                                ->badge()
-                                                ->color(fn (string $state): string => match ($state) {
-                                                    'pendiente' => 'gray',
-                                                    'en_progreso' => 'warning',
-                                                    'completado' => 'success',
-                                                    'cancelado' => 'danger',
-                                                    default => 'gray',
-                                                })
-                                                ->formatStateUsing(fn (string $state): string => match ($state) {
-                                                    'pendiente' => 'Pendiente',
-                                                    'en_progreso' => 'En Progreso',
-                                                    'completado' => 'Completado',
-                                                    'cancelado' => 'Cancelado',
-                                                    default => $state,
-                                                }),
-                                        ]),
                                     ])
                                     ->compact(),
                             ]),
-
-                        Tabs\Tab::make('Creador')
-                            ->icon('heroicon-o-user')
-                            ->schema([
-                                Section::make('Usuario Creador')
-                                    ->icon('heroicon-o-user-circle')
-                                    ->schema([
-                                        TextEntry::make('usuario.name')
-                                            ->label('Nombre')
-                                            ->icon('heroicon-o-user')
-                                            ->iconColor('primary')
-                                            ->size('md'),
-                                        TextEntry::make('usuario.email')
-                                            ->label('Email')
-                                            ->icon('heroicon-o-envelope')
-                                            ->copyable()
-                                            ->copyMessage('Email copiado')
-                                            ->copyMessageDuration(1500),
-                                    ])
-                                    ->columns(2),
-                            ]),
-
-                        Tabs\Tab::make('Fechas y Estado')
-                            ->icon('heroicon-o-calendar')
-                            ->badge(fn ($record) => $record->estado === 'completado' ? '✓' : null)
-                            ->schema([
-                                Grid::make(2)
-                                    ->schema([
-                                        Section::make('Cronograma')
-                                            ->icon('heroicon-o-calendar-days')
-                                            ->schema([
-                                                TextEntry::make('fecha_inicio')
-                                                    ->label('Fecha de Inicio')
-                                                    ->date('d/m/Y')
-                                                    ->placeholder('Sin fecha de inicio')
-                                                    ->icon('heroicon-o-play')
-                                                    ->iconColor('success'),
-                                                TextEntry::make('fecha_fin')
-                                                    ->label('Fecha de Fin')
-                                                    ->date('d/m/Y')
-                                                    ->placeholder('Sin fecha de fin')
-                                                    ->icon('heroicon-o-flag')
-                                                    ->iconColor('danger'),
-                                            ])
-                                            ->columns(1),
-
-                                        Section::make('Estado y Prioridad')
-                                            ->icon('heroicon-o-chart-bar-square')
-                                            ->schema([
-                                                TextEntry::make('estado')
-                                                    ->label('Estado')
-                                                    ->badge()
-                                                    ->color(fn (string $state): string => match ($state) {
-                                                        'pendiente' => 'gray',
-                                                        'en_progreso' => 'warning',
-                                                        'completado' => 'success',
-                                                        'cancelado' => 'danger',
-                                                        default => 'gray',
-                                                    })
-                                                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                                                        'pendiente' => 'Pendiente',
-                                                        'en_progreso' => 'En Progreso',
-                                                        'completado' => 'Completado',
-                                                        'cancelado' => 'Cancelado',
-                                                        default => $state,
-                                                    }),
-                                                TextEntry::make('prioridad')
-                                                    ->label('Prioridad')
-                                                    ->badge()
-                                                    ->color(fn (int $state): string => match ($state) {
-                                                        1 => 'success',
-                                                        2 => 'info',
-                                                        3 => 'warning',
-                                                        4 => 'danger',
-                                                        default => 'gray',
-                                                    })
-                                                    ->formatStateUsing(fn (int $state): string => match ($state) {
-                                                        1 => 'Baja',
-                                                        2 => 'Media',
-                                                        3 => 'Alta',
-                                                        4 => 'Urgente',
-                                                        default => 'Desconocida',
-                                                    }),
-                                            ])
-                                            ->columns(1),
-                                    ]),
-                            ]),
-
-                        Tabs\Tab::make('Progreso')
-                            ->icon('heroicon-o-chart-bar')
-                            ->badge(fn ($record) => $record->progreso . '%')
-                            ->schema([
-                                Section::make()
-                                    ->schema([
-                                        TextEntry::make('progreso')
-                                            ->label('Porcentaje de Progreso')
-                                            ->suffix('%')
-                                            ->size('lg')
-                                            ->weight('bold')
-                                            ->color(fn (int $state): string => match (true) {
-                                                $state === 100 => 'success',
-                                                $state >= 75 => 'info',
-                                                $state >= 50 => 'warning',
-                                                $state >= 25 => 'gray',
-                                                default => 'danger',
-                                            })
-                                            ->icon(fn (int $state): string => match (true) {
-                                                $state === 100 => 'heroicon-o-check-circle',
-                                                $state >= 50 => 'heroicon-o-clock',
-                                                default => 'heroicon-o-exclamation-circle',
-                                            }),
-                                    ]),
-                            ]),
-                        
                         Tabs\Tab::make('Historial de Reasignación')
                             ->icon('heroicon-o-arrows-right-left')
                             ->badge(fn ($record) => $record->reasignacionHistorial()->count())
@@ -376,7 +237,7 @@ class TareaResource extends Resource
                                     ->grid(2)
                                     ->contained(false),
                             ]),
-
+                        // Mantengo tu Tab de Auditoría también
                         Tabs\Tab::make('Auditoría')
                             ->icon('heroicon-o-clock')
                             ->schema([
@@ -384,15 +245,10 @@ class TareaResource extends Resource
                                     ->schema([
                                         TextEntry::make('created_at')
                                             ->label('Fecha de Creación')
-                                            ->dateTime('d/m/Y H:i:s')
-                                            ->icon('heroicon-o-plus-circle')
-                                            ->iconColor('success'),
+                                            ->dateTime('d/m/Y H:i:s'),
                                         TextEntry::make('updated_at')
                                             ->label('Última Actualización')
-                                            ->dateTime('d/m/Y H:i:s')
-                                            ->icon('heroicon-o-pencil-square')
-                                            ->iconColor('warning')
-                                            ->since(),
+                                            ->dateTime('d/m/Y H:i:s'),
                                     ]),
                             ]),
                     ])
@@ -404,43 +260,105 @@ class TareaResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->contentGrid([
+                'md' => 2,
+                'xl' => 2, // 2 Columnas para que se vea espacioso
+            ])
             ->columns([
-                TextColumn::make('proyecto.id')
-                    ->searchable(),
-                TextColumn::make('nombre')
-                    ->searchable(),
-                TextColumn::make('usuario.name')
-                    ->label('Asignado a')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('estado')
-                    ->searchable(),
-                TextColumn::make('fecha_inicio')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('fecha_fin')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('prioridad')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('progreso')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Stack::make([
+                    // HEADER: Borde izquierdo con color + Título + Badge Prioridad
+                    Split::make([
+                        Stack::make([
+                            TextColumn::make('nombre')
+                                ->weight('bold')
+                                ->size('lg')
+                                ->searchable(),
+                        ])->space(1),
+                        
+                        TextColumn::make('prioridad')
+                            ->badge()
+                            ->color(fn (int $state): string => match ($state) {
+                                1 => 'info',
+                                2 => 'primary',
+                                3 => 'warning',
+                                4 => 'danger',
+                                default => 'gray',
+                            })
+                            ->formatStateUsing(fn (int $state): string => match ($state) {
+                                1 => 'Baja',
+                                2 => 'Media',
+                                3 => 'Alta',
+                                4 => 'Urgente',
+                                default => 'Desc.',
+                            }),
+                    ])->extraAttributes(fn (Tarea $record): array => [
+                        'class' => 'items-center', 
+                        'style' => 'border-left: 4px solid ' . self::getPriorityColor($record->prioridad) . '; padding-left: 12px;',
+                    ]),
+
+                    // BODY: Proyecto y Estado
+                    Stack::make([
+                        Split::make([
+                            TextColumn::make('proyecto.nombre')
+                                ->color('gray')
+                                ->size('sm')
+                                ->icon('heroicon-o-rectangle-stack')
+                                ->limit(30),
+                            
+                            TextColumn::make('estado')
+                                ->badge()
+                                ->formatStateUsing(fn (string $state): string => ucfirst(str_replace('_', ' ', $state)))
+                                ->color(fn (string $state): string => match ($state) {
+                                    'pendiente' => 'gray',
+                                    'en_progreso' => 'warning',
+                                    'completado' => 'success',
+                                    'cancelado' => 'danger',
+                                    default => 'gray',
+                                }),
+                        ]),
+                    ])->extraAttributes(['class' => 'py-3']),
+
+                    // BARRA DE PROGRESO (Visualmente mejor que solo texto)
+                    ViewColumn::make('progreso')
+                        ->view('filament.tables.columns.progress-bar')
+                        ->columnSpanFull(),
+
+                    // FOOTER: Avatar y Fecha Fin
+                    Split::make([
+                        Stack::make([
+                            ImageColumn::make('usuario.name')
+                                ->circular()
+                                ->size('xs')
+                                ->defaultImageUrl(fn (Tarea $record): string => 'https://ui-avatars.com/api/?name=' . urlencode($record->usuario?->name ?? '?') . '&background=random'),
+                            
+                            TextColumn::make('usuario.name')
+                                ->color('gray')
+                                ->size('xs')
+                                ->placeholder('Sin asignar'),
+                        ])->visibleFrom('md'),
+
+                        Stack::make([
+                            TextColumn::make('fecha_fin')
+                                ->icon('heroicon-o-calendar')
+                                ->color('gray')
+                                ->size('xs')
+                                ->date('d M Y')
+                                ->placeholder('Sin fecha'),
+                        ])->alignment('end'),
+                    ])
+                    ->extraAttributes([
+                        'class' => 'pt-3 mt-2 border-t border-gray-100 dark:border-gray-700 items-center',
+                    ]),
+                ])
+                ->space(1)
+                ->extraAttributes([
+                    'class' => 'p-5 rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 hover:shadow-md transition-shadow duration-300',
+                ]),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->recordActions([
                 ViewAction::make(),
+                // AQUÍ ESTÁ TU LÓGICA PERSONALIZADA DE EDICIÓN CONSERVADA
                 EditAction::make()
                     ->using(function (Model $record, array $data) {
                         // Use getOriginal to ensure we are comparing against the value before the update
@@ -453,6 +371,7 @@ class TareaResource extends Resource
                                 'motivo' => $data['reasignacion_motivo'] ?? null,
                             ]);
                         }
+                        // Limpiamos el motivo antes de guardar la tarea (ya que no es columna de Tarea)
                         unset($data['reasignacion_motivo']);
                         $record->update($data);
                     }),
@@ -463,6 +382,18 @@ class TareaResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    // Helper para el color del borde (necesario para el diseño visual)
+    private static function getPriorityColor(int $priority): string
+    {
+        return match ($priority) {
+            1 => '#3b82f6', // Info
+            2 => '#6366f1', // Primary
+            3 => '#eab308', // Warning
+            4 => '#ef4444', // Danger
+            default => '#9ca3af',
+        };
     }
 
     public static function getPages(): array
