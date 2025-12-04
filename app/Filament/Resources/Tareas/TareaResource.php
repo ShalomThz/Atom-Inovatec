@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Tareas;
 
 use App\Filament\Resources\Tareas\Pages\ManageTareas;
 use App\Models\Tarea;
+use App\Models\TareaReasignacionHistorial;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -12,18 +13,20 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Tabs;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class TareaResource extends Resource
@@ -112,7 +115,11 @@ class TareaResource extends Resource
                             ->icon('heroicon-o-user')
                             ->schema([
                                 Select::make('user_id')
-                                    ->relationship('usuario', 'name')
+                                    ->relationship(
+                                        name: 'usuario',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn (Builder $query, ?Tarea $record): Builder => $record ? $query->where('id', '!=', $record->user_id) : $query
+                                    )
                                     ->searchable()
                                     ->preload()
                                     ->required()
@@ -120,7 +127,7 @@ class TareaResource extends Resource
                                     ->placeholder('Seleccione un usuario')
                                     ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
                                 Textarea::make('reasignacion_motivo')
-                                    ->label('Motivo de Reasignación')
+                                    ->label('Motivo de Reasignación (si aplica)')
                                     ->rows(4),
                             ]),
 
@@ -343,6 +350,32 @@ class TareaResource extends Resource
                                             }),
                                     ]),
                             ]),
+                        
+                        Tabs\Tab::make('Historial de Reasignación')
+                            ->icon('heroicon-o-arrows-right-left')
+                            ->badge(fn ($record) => $record->reasignacionHistorial()->count())
+                            ->visible(fn ($record) => $record->reasignacionHistorial()->exists())
+                            ->schema([
+                                RepeatableEntry::make('reasignacionHistorial')
+                                    ->label('')
+                                    ->schema([
+                                        TextEntry::make('created_at')
+                                            ->label('Fecha del Cambio')
+                                            ->dateTime('d/m/Y H:i:s'),
+                                        TextEntry::make('modificadoPor.name')
+                                            ->label('Cambio realizado por'),
+                                        TextEntry::make('usuarioAnterior.name')
+                                            ->label('Asignado Anteriormente a')
+                                            ->placeholder('N/A'),
+                                        TextEntry::make('usuarioNuevo.name')
+                                            ->label('Asignado a'),
+                                        TextEntry::make('motivo')
+                                            ->label('Motivo del cambio')
+                                            ->placeholder('Sin motivo especificado.'),
+                                    ])
+                                    ->grid(2)
+                                    ->contained(false),
+                            ]),
 
                         Tabs\Tab::make('Auditoría')
                             ->icon('heroicon-o-clock')
@@ -377,7 +410,7 @@ class TareaResource extends Resource
                 TextColumn::make('nombre')
                     ->searchable(),
                 TextColumn::make('usuario.name')
-                    ->label('Creado por')
+                    ->label('Asignado a')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('estado')
@@ -408,7 +441,21 @@ class TareaResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->using(function (Model $record, array $data) {
+                        // Use getOriginal to ensure we are comparing against the value before the update
+                        if ($record->getOriginal('user_id') != $data['user_id']) {
+                            TareaReasignacionHistorial::create([
+                                'tarea_id' => $record->id,
+                                'usuario_anterior_id' => $record->getOriginal('user_id'),
+                                'usuario_nuevo_id' => $data['user_id'],
+                                'modificado_por_id' => auth()->id(),
+                                'motivo' => $data['reasignacion_motivo'] ?? null,
+                            ]);
+                        }
+                        unset($data['reasignacion_motivo']);
+                        $record->update($data);
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([

@@ -12,7 +12,6 @@ class Tarea extends Model
         'nombre',
         'descripcion',
         'user_id',
-        'reasignacion_motivo',
         'estado',
         'fecha_inicio',
         'fecha_fin',
@@ -39,5 +38,13 @@ class Tarea extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Relación: Una tarea tiene muchos registros de historial de reasignación
+     */
+    public function reasignacionHistorial(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TareaReasignacionHistorial::class)->latest();
     }
 }
