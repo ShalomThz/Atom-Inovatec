@@ -12,6 +12,7 @@ class Tarea extends Model
         'nombre',
         'descripcion',
         'user_id',
+        'reasignacion_motivo',
         'estado',
         'fecha_inicio',
         'fecha_fin',

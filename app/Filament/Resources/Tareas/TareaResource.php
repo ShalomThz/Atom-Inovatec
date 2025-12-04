@@ -116,8 +116,12 @@ class TareaResource extends Resource
                                     ->searchable()
                                     ->preload()
                                     ->required()
-                                    ->label('Creado por')
-                                    ->placeholder('Seleccione un usuario'),
+                                    ->label('Asignado a')
+                                    ->placeholder('Seleccione un usuario')
+                                    ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
+                                Textarea::make('reasignacion_motivo')
+                                    ->label('Motivo de Reasignación')
+                                    ->rows(4),
                             ]),
 
                         Tabs\Tab::make('Fechas y Estado')

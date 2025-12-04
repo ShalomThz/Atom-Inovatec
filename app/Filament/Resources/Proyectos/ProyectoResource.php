@@ -81,7 +81,8 @@ class ProyectoResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->preload()
-                                    ->label('Creador del Proyecto'),
+                                    ->label('Creador del Proyecto')
+                                    ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
                             ]),
 
                         Tabs\Tab::make('Fechas y Estado')
@@ -145,7 +146,8 @@ class ProyectoResource extends Resource
                                             ->relationship('usuario', 'name')
                                             ->searchable()
                                             ->preload()
-                                            ->label('Asignado a'),
+                                            ->label('Asignado a')
+                                            ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
                                         Select::make('estado')
                                             ->required()
                                             ->options([
