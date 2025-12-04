@@ -24,6 +24,10 @@ Route::middleware(['auth'])->group(function () {
         );
         return response()->json($result);
     })->name('kanban.update-tarea');
+
+    // Reporte PDF
+    Route::get('/admin/reporte/proyectos/pdf', [\App\Http\Controllers\ReporteController::class, 'generarPdfProyectos'])
+        ->name('reporte.proyectos.pdf');
 });
 
 require __DIR__.'/settings.php';

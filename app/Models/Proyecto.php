@@ -40,4 +40,66 @@ class Proyecto extends Model
     {
         return $this->hasMany(Tarea::class);
     }
+
+    /**
+     * Calcula el progreso general del proyecto basado en sus tareas
+     */
+    public function getProgresoGeneralAttribute(): float
+    {
+        $tareas = $this->tareas;
+
+        if ($tareas->isEmpty()) {
+            return 0;
+        }
+
+        $progresoTotal = $tareas->sum('progreso');
+        return round($progresoTotal / $tareas->count(), 2);
+    }
+
+    /**
+     * Cuenta las tareas por estado
+     */
+    public function getTareasEstadisticasAttribute(): array
+    {
+        $tareas = $this->tareas;
+
+        return [
+            'total' => $tareas->count(),
+            'pendientes' => $tareas->where('estado', 'pendiente')->count(),
+            'en_progreso' => $tareas->where('estado', 'en_progreso')->count(),
+            'completadas' => $tareas->where('estado', 'completado')->count(),
+            'canceladas' => $tareas->where('estado', 'cancelado')->count(),
+        ];
+    }
+
+    /**
+     * Verifica si el proyecto está retrasado
+     */
+    public function getEstaRetrasadoAttribute(): bool
+    {
+        if (!$this->fecha_fin) {
+            return false;
+        }
+
+        $hoy = now()->startOfDay();
+        $fechaFin = $this->fecha_fin->startOfDay();
+
+        // Está retrasado si la fecha de fin ya pasó y el proyecto no está completado
+        return $fechaFin < $hoy && $this->estado !== 'completado';
+    }
+
+    /**
+     * Obtiene el porcentaje de tareas completadas
+     */
+    public function getPorcentajeTareasCompletadasAttribute(): float
+    {
+        $tareas = $this->tareas;
+
+        if ($tareas->isEmpty()) {
+            return 0;
+        }
+
+        $completadas = $tareas->where('estado', 'completado')->count();
+        return round(($completadas / $tareas->count()) * 100, 2);
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Widgets\ProyectosChart;
+use App\Filament\Widgets\ReporteProyectosWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\TareasPorPrioridadChart;
 use App\Filament\Widgets\TareasRecientesWidget;
@@ -42,6 +43,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
+                ReporteProyectosWidget::class,
                 StatsOverviewWidget::class,
                 ProyectosChart::class,
                 TareasPorPrioridadChart::class,
