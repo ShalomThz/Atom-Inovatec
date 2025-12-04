@@ -9,8 +9,10 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/css/kanban.css',
+                'resources/css/calendar.css',
                 'resources/js/app.tsx',
-                'resources/js/kanban-init.tsx'
+                'resources/js/kanban-init.tsx',
+                'resources/js/calendar-init.tsx'
             ],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
