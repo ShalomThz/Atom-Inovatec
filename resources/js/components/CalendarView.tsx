@@ -97,18 +97,18 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tareas }) => {
     };
 
     const getPriorityColor = (prioridad: string): string => {
-        if (!prioridad) return 'bg-gray-500 dark:bg-gray-600';
+        if (!prioridad) return 'bg-gray-300 dark:bg-gray-600';
 
         const prioridadStr = String(prioridad).toLowerCase();
         switch (prioridadStr) {
             case 'alta':
-                return 'bg-red-500 dark:bg-red-600';
+                return 'bg-red-200 dark:bg-red-600';
             case 'media':
-                return 'bg-yellow-500 dark:bg-yellow-600';
+                return 'bg-yellow-200 dark:bg-yellow-600';
             case 'baja':
-                return 'bg-green-500 dark:bg-green-600';
+                return 'bg-green-200 dark:bg-green-600';
             default:
-                return 'bg-gray-500 dark:bg-gray-600';
+                return 'bg-gray-300 dark:bg-gray-600';
         }
     };
 
