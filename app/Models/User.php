@@ -70,6 +70,14 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Tarea::class);
     }
 
+    /**
+     * Relación: Un usuario tiene muchas notificaciones
+     */
+    public function notificaciones(): HasMany
+    {
+        return $this->hasMany(Notificacion::class);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $panel->getId() === 'admin';

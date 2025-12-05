@@ -28,6 +28,16 @@ Route::middleware(['auth'])->group(function () {
     // Reporte PDF
     Route::get('/admin/reporte/proyectos/pdf', [\App\Http\Controllers\ReporteController::class, 'generarPdfProyectos'])
         ->name('reporte.proyectos.pdf');
+
+    // Notificaciones API
+    Route::prefix('api/notificaciones')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\NotificacionController::class, 'index'])->name('api.notificaciones.index');
+        Route::get('/no-leidas', [\App\Http\Controllers\Api\NotificacionController::class, 'noLeidas'])->name('api.notificaciones.no-leidas');
+        Route::post('/{id}/marcar-leida', [\App\Http\Controllers\Api\NotificacionController::class, 'marcarComoLeida'])->name('api.notificaciones.marcar-leida');
+        Route::post('/marcar-todas-leidas', [\App\Http\Controllers\Api\NotificacionController::class, 'marcarTodasComoLeidas'])->name('api.notificaciones.marcar-todas-leidas');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\NotificacionController::class, 'destroy'])->name('api.notificaciones.destroy');
+        Route::delete('/leidas/eliminar', [\App\Http\Controllers\Api\NotificacionController::class, 'eliminarLeidas'])->name('api.notificaciones.eliminar-leidas');
+    });
 });
 
 require __DIR__.'/settings.php';

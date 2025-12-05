@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Tarea;
+use App\Services\NotificacionService;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -87,6 +88,7 @@ class KanbanBoard extends Page
 
             // Asegurar que el estado sea una cadena válida
             $estadoValido = (string) $nuevoEstado;
+            $estadoAnterior = $tarea->estado;
 
             $tarea->estado = $estadoValido;
 
@@ -98,6 +100,16 @@ class KanbanBoard extends Page
             }
 
             $tarea->save();
+
+            // Notificar cambio de estado al usuario asignado
+            if ($estadoAnterior !== $estadoValido) {
+                NotificacionService::notificarCambioEstadoTarea(
+                    $tarea,
+                    $estadoAnterior,
+                    $estadoValido,
+                    $user
+                );
+            }
 
             // No hacer dispatch para evitar recargas de Livewire
             // Return success response

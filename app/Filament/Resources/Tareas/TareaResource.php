@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Tareas;
 use App\Filament\Resources\Tareas\Pages\ManageTareas;
 use App\Models\Tarea;
 use App\Models\TareaReasignacionHistorial;
+use App\Models\User;
+use App\Services\NotificacionService;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -361,16 +363,43 @@ class TareaResource extends Resource
                 // AQUÍ ESTÁ TU LÓGICA PERSONALIZADA DE EDICIÓN CONSERVADA
                 EditAction::make()
                     ->using(function (Model $record, array $data) {
-                        // Use getOriginal to ensure we are comparing against the value before the update
-                        if ($record->getOriginal('user_id') != $data['user_id']) {
+                        $userIdAnterior = $record->getOriginal('user_id');
+                        $userIdNuevo = $data['user_id'];
+                        $estadoAnterior = $record->getOriginal('estado');
+                        $estadoNuevo = $data['estado'] ?? $estadoAnterior;
+
+                        // Detectar reasignación de tarea
+                        if ($userIdAnterior != $userIdNuevo) {
                             TareaReasignacionHistorial::create([
                                 'tarea_id' => $record->id,
-                                'usuario_anterior_id' => $record->getOriginal('user_id'),
-                                'usuario_nuevo_id' => $data['user_id'],
+                                'usuario_anterior_id' => $userIdAnterior,
+                                'usuario_nuevo_id' => $userIdNuevo,
                                 'modificado_por_id' => auth()->id(),
                                 'motivo' => $data['reasignacion_motivo'] ?? null,
                             ]);
+
+                            // Notificar reasignación
+                            $usuarioAnterior = $userIdAnterior ? User::find($userIdAnterior) : null;
+                            $usuarioNuevo = User::find($userIdNuevo);
+                            NotificacionService::notificarTareaReasignada(
+                                $record,
+                                $usuarioAnterior,
+                                $usuarioNuevo,
+                                auth()->user(),
+                                $data['reasignacion_motivo'] ?? null
+                            );
                         }
+
+                        // Detectar cambio de estado
+                        if ($estadoAnterior != $estadoNuevo) {
+                            NotificacionService::notificarCambioEstadoTarea(
+                                $record,
+                                $estadoAnterior,
+                                $estadoNuevo,
+                                auth()->user()
+                            );
+                        }
+
                         // Limpiamos el motivo antes de guardar la tarea (ya que no es columna de Tarea)
                         unset($data['reasignacion_motivo']);
                         $record->update($data);

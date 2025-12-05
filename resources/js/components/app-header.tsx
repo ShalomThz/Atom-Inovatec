@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { Link, usePage } from '@inertiajs/react';
+import { NotificationCenter } from './notification-center';
 
 interface AppHeaderProps {
     title?: string;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ title }) => {
+export const AppHeader: React.FC<AppHeaderProps> = ({ title }) => {
     const { auth } = usePage().props as any;
 
     return (
@@ -15,6 +16,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title }) => {
                     {title || 'AtomInovatec'}
                 </h1>
                 <div className="flex items-center gap-4">
+                    <NotificationCenter />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                         {auth?.user?.name}
                     </span>
@@ -23,5 +25,3 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title }) => {
         </header>
     );
 };
-
-export default AppHeader;
