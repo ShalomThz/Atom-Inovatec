@@ -55,43 +55,61 @@
         <!-- Lista de notificaciones -->
         <div class="overflow-y-auto">
             @forelse($notificaciones as $notificacion)
-                <div class="fi-dropdown-list-item flex items-start gap-3 px-4 py-2.5 transition {{ !$notificacion['leida'] ? 'bg-primary-50/50 dark:bg-primary-950/50' : '' }} hover:bg-gray-50 dark:hover:bg-white/5">
+                <div style="position: relative !important; padding: 0.875rem 1rem !important; transition: all 0.2s !important; border-bottom: 1px solid #f3f4f6 !important; {{ !$notificacion['leida'] ? 'background-color: #eff6ff !important;' : 'background-color: #ffffff !important;' }}" onmouseover="this.style.backgroundColor='#f9fafb'" onmouseout="this.style.backgroundColor='{{ !$notificacion['leida'] ? '#eff6ff' : '#ffffff' }}'">
+                    <!-- Indicador de no leída (borde izquierdo) -->
+                    @if(!$notificacion['leida'])
+                        <div style="position: absolute !important; left: 0 !important; top: 0 !important; bottom: 0 !important; width: 4px !important; background-color: #3b82f6 !important;"></div>
+                    @endif
+
                     <!-- Contenido -->
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-start justify-between gap-2">
-                            <p class="text-sm font-medium text-gray-950 dark:text-white">
-                                {{ $notificacion['titulo'] }}
-                            </p>
-                            @if(!$notificacion['leida'])
-                                <div class="flex-shrink-0 mt-1.5 h-2 w-2 rounded-full bg-primary-600"></div>
-                            @endif
-                        </div>
-                        <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                            {{ $notificacion['mensaje'] }}
-                        </p>
-                        <div class="mt-2 flex items-center justify-between">
-                            <p class="text-xs text-gray-400 dark:text-gray-500">
-                                {{ \Carbon\Carbon::parse($notificacion['created_at'])->diffForHumans() }}
-                            </p>
-                            <div class="flex gap-2">
+                    <div style="display: flex !important; align-items: flex-start !important; justify-content: space-between !important; gap: 0.75rem !important;">
+                        <div style="flex: 1 !important; min-width: 0 !important;">
+                            <!-- Título con badge -->
+                            <div style="display: flex !important; align-items: center !important; gap: 0.5rem !important; margin-bottom: 0.375rem !important;">
+                                <h4 style="font-size: 0.875rem !important; font-weight: 600 !important; color: #111827 !important; margin: 0 !important;">
+                                    {{ $notificacion['titulo'] }}
+                                </h4>
                                 @if(!$notificacion['leida'])
-                                    <button
-                                        wire:click="marcarComoLeida({{ $notificacion['id'] }})"
-                                        style="font-size: 0.75rem !important; font-weight: 500 !important; color: #4f46e5 !important; transition: all 0.2s !important;"
-                                        onmouseover="this.style.color='#4338ca'"
-                                        onmouseout="this.style.color='#4f46e5'"
-                                    >
-                                        Marcar leída
-                                    </button>
+                                    <span style="display: inline-flex !important; align-items: center !important; padding: 0.125rem 0.5rem !important; border-radius: 9999px !important; font-size: 0.75rem !important; font-weight: 500 !important; background-color: #dbeafe !important; color: #1e40af !important;">
+                                        Nueva
+                                    </span>
                                 @endif
-                                <button
-                                    wire:click="eliminar({{ $notificacion['id'] }})"
-                                    style="font-size: 0.75rem !important; font-weight: 500 !important; color: #dc2626 !important; transition: all 0.2s !important;"
-                                    onmouseover="this.style.color='#b91c1c'"
-                                    onmouseout="this.style.color='#dc2626'"
-                                >
-                                    Eliminar
-                                </button>
+                            </div>
+
+                            <!-- Mensaje -->
+                            <p style="font-size: 0.875rem !important; color: #4b5563 !important; line-height: 1.5 !important; margin-bottom: 0.5rem !important;">
+                                {{ $notificacion['mensaje'] }}
+                            </p>
+
+                            <!-- Footer: Fecha y acciones -->
+                            <div style="display: flex !important; align-items: center !important; justify-content: space-between !important;">
+                                <div style="display: flex !important; align-items: center !important; gap: 0.5rem !important; font-size: 0.75rem !important; color: #6b7280 !important;">
+                                    <svg style="width: 0.875rem !important; height: 0.875rem !important;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>{{ \Carbon\Carbon::parse($notificacion['created_at'])->diffForHumans() }}</span>
+                                </div>
+
+                                <div style="display: flex !important; align-items: center !important; gap: 0.5rem !important;">
+                                    @if(!$notificacion['leida'])
+                                        <button
+                                            wire:click="marcarComoLeida({{ $notificacion['id'] }})"
+                                            style="padding: 0.25rem 0.625rem !important; border-radius: 0.375rem !important; font-size: 0.75rem !important; font-weight: 500 !important; transition: all 0.2s !important; background-color: #dbeafe !important; color: #1e40af !important; border: none !important; cursor: pointer !important;"
+                                            onmouseover="this.style.backgroundColor='#bfdbfe'"
+                                            onmouseout="this.style.backgroundColor='#dbeafe'"
+                                        >
+                                            Marcar leída
+                                        </button>
+                                    @endif
+                                    <button
+                                        wire:click="eliminar({{ $notificacion['id'] }})"
+                                        style="padding: 0.25rem 0.625rem !important; border-radius: 0.375rem !important; font-size: 0.75rem !important; font-weight: 500 !important; transition: all 0.2s !important; background-color: #fee2e2 !important; color: #991b1b !important; border: none !important; cursor: pointer !important;"
+                                        onmouseover="this.style.backgroundColor='#fecaca'"
+                                        onmouseout="this.style.backgroundColor='#fee2e2'"
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
