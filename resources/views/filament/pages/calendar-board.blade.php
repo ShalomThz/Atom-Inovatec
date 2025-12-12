@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div id="calendar-view-root"
-         data-tareas="{{ json_encode($tareas) }}"
+         data-tareas='@json($tareas)'
          class="calendar-view-container">
         <div class="flex items-center justify-center p-8">
             <div class="text-gray-500">Cargando calendario...</div>

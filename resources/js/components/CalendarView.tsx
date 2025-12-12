@@ -3,7 +3,7 @@ import * as React from 'react';
 import '../../css/calendar.css';
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Folder, User, TrendingUp, Calendar, Clock, CheckCircle, XCircle, Hourglass, X } from 'lucide-react';
+import { Folder, User, TrendingUp, Calendar, Clock, CheckCircle, XCircle, Hourglass } from 'lucide-react';
 
 interface Tarea {
     id: number;
@@ -28,44 +28,94 @@ const MESES = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
-const DetailPanelContent = ({ task }: { task: Tarea }) => {
+/**
+ * Convierte una fecha string (YYYY-MM-DD) a Date usando timezone local
+ * Evita el problema de timezone al interpretar fechas como UTC
+ */
+const parseLocalDate = (dateString: string | null): Date | null => {
+    if (!dateString) return null;
+
+    // Validar formato de fecha
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dateString)) {
+        console.warn(`Formato de fecha inválido: "${dateString}". Se esperaba YYYY-MM-DD.`);
+        return null;
+    }
+
+    // Parsear como fecha local (no UTC)
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
+/**
+ * Convierte una Date a string YYYY-MM-DD en timezone local
+ */
+const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const TaskHoverCard = ({ task, position }: { task: Tarea; position: { x: number; y: number } }) => {
     const estadoInfo = getEstadoInfo(task.estado);
 
     return (
-        <div className="p-6 h-full overflow-y-auto">
-            {task.descripcion && <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{task.descripcion}</p>}
+        <div
+            className="task-hover-card"
+            style={{
+                position: 'fixed',
+                left: `${position.x}px`,
+                top: `${position.y}px`,
+                zIndex: 9999,
+            }}
+        >
+            <div className="task-hover-header">
+                <h3 className="task-hover-title">{task.nombre}</h3>
+                <span className={`task-hover-estado ${estadoInfo.className}`}>
+                    {estadoInfo.icon} {estadoInfo.text}
+                </span>
+            </div>
 
-            <div className="space-y-3 text-sm">
-                <div className="flex items-center gap-3">
-                    <Folder className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">{task.proyecto || 'N/A'}</span>
+            {task.descripcion && (
+                <p className="task-hover-descripcion">{task.descripcion}</p>
+            )}
+
+            <div className="task-hover-info">
+                <div className="task-hover-info-item">
+                    <Folder className="task-hover-icon" />
+                    <span>{task.proyecto || 'N/A'}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    <User className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">{task.asignado || 'Sin asignar'}</span>
+                <div className="task-hover-info-item">
+                    <User className="task-hover-icon" />
+                    <span>{task.asignado || 'Sin asignar'}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    <TrendingUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-300">{task.progreso}% completado</span>
+                <div className="task-hover-info-item">
+                    <TrendingUp className="task-hover-icon" />
+                    <span>{task.progreso}% completado</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 flex-shrink-0 flex items-center justify-center`}>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(task.prioridad, 'bg')} ${getPriorityColor(task.prioridad, 'text')}`}>
-                            {String(task.prioridad).charAt(0).toUpperCase()}
-                        </span>
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">Prioridad {task.prioridad}</span>
-                </div>
-                <div className={`flex items-center gap-3 font-medium ${estadoInfo.className}`}>
-                    <div className="w-5 h-5 flex-shrink-0">{estadoInfo.icon}</div>
-                    <span>{estadoInfo.text}</span>
+                <div className="task-hover-info-item">
+                    <span className={`task-hover-priority ${getPriorityColor(task.prioridad, 'bg')} ${getPriorityColor(task.prioridad, 'text')}`}>
+                        {String(task.prioridad).charAt(0).toUpperCase()}
+                    </span>
+                    <span>Prioridad {task.prioridad}</span>
                 </div>
             </div>
 
             {(task.fecha_inicio || task.fecha_fin) && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm">
-                    {task.fecha_inicio && <p className="flex items-center gap-2 text-gray-600 dark:text-gray-400"><Calendar className="w-4 h-4"/> <strong>Inicio:</strong> {new Date(task.fecha_inicio).toLocaleDateString('es-ES')}</p>}
-                    {task.fecha_fin && <p className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mt-1"><Calendar className="w-4 h-4"/> <strong>Fin:</strong> {new Date(task.fecha_fin).toLocaleDateString('es-ES')}</p>}
+                <div className="task-hover-dates">
+                    {task.fecha_inicio && (
+                        <div className="task-hover-date-item">
+                            <Calendar className="task-hover-icon" />
+                            <strong>Inicio:</strong> {parseLocalDate(task.fecha_inicio)?.toLocaleDateString('es-ES')}
+                        </div>
+                    )}
+                    {task.fecha_fin && (
+                        <div className="task-hover-date-item">
+                            <Calendar className="task-hover-icon" />
+                            <strong>Fin:</strong> {parseLocalDate(task.fecha_fin)?.toLocaleDateString('es-ES')}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -86,35 +136,43 @@ const getPriorityColor = (prioridad: string, type: 'bg' | 'text' | 'border') => 
 const getEstadoInfo = (estado: string): { icon: React.ReactNode, text: string, className: string } => {
     const e = String(estado).toLowerCase();
     const info = {
-        completado: { icon: <CheckCircle className="w-4 h-4" />, text: 'Completado', className: 'text-green-600 dark:text-green-400' },
+        completada: { icon: <CheckCircle className="w-4 h-4" />, text: 'Completado', className: 'text-green-600 dark:text-green-400' },
         en_progreso: { icon: <Hourglass className="w-4 h-4" />, text: 'En Progreso', className: 'text-amber-600 dark:text-amber-400' },
-        cancelado: { icon: <XCircle className="w-4 h-4" />, text: 'Cancelado', className: 'text-red-600 dark:text-red-400' },
+        cancelada: { icon: <XCircle className="w-4 h-4" />, text: 'Cancelado', className: 'text-red-600 dark:text-red-400' },
         pendiente: { icon: <Clock className="w-4 h-4" />, text: 'Pendiente', className: 'text-gray-600 dark:text-gray-400' },
     };
+
+    // Log warning if estado is not recognized
+    if (!info[e]) {
+        console.warn(`Estado no reconocido: "${estado}". Usando "pendiente" por defecto.`);
+    }
+
     return info[e] || info.pendiente;
 };
 
 const CalendarView: React.FC<CalendarViewProps> = ({ tareas }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const [selectedTask, setSelectedTask] = useState<Tarea | null>(null);
-
-    const isPanelOpen = !!selectedTask;
+    const [hoveredTask, setHoveredTask] = useState<{ task: Tarea; position: { x: number; y: number } } | null>(null);
 
     const handleDayClick = (date: Date) => {
         setSelectedDate(date);
-        setSelectedTask(null); // Close panel if a day is clicked
     };
 
-    const handleTaskClick = (tarea: Tarea, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setSelectedTask(tarea);
-        setSelectedDate(null);
+    const handleTaskMouseEnter = (tarea: Tarea, e: React.MouseEvent) => {
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+        setHoveredTask({
+            task: tarea,
+            position: {
+                x: rect.right + 10, // 10px a la derecha del badge
+                y: rect.top,
+            }
+        });
     };
-    
-    const closePanel = () => {
-        setSelectedTask(null);
-    }
+
+    const handleTaskMouseLeave = () => {
+        setHoveredTask(null);
+    };
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -127,35 +185,40 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tareas }) => {
     const goToPreviousMonth = () => {
         setCurrentDate(new Date(year, month - 1, 1));
         setSelectedDate(null);
-        setSelectedTask(null);
     };
 
     const goToNextMonth = () => {
         setCurrentDate(new Date(year, month + 1, 1));
         setSelectedDate(null);
-        setSelectedTask(null);
     };
 
     const goToToday = () => {
         setCurrentDate(new Date());
         setSelectedDate(new Date());
-        setSelectedTask(null);
     };
 
     const getTareasForDate = (date: Date): Tarea[] => {
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = formatLocalDate(date);
         return tareas.filter(tarea => {
-            const fechaInicio = tarea.fecha_inicio ? new Date(tarea.fecha_inicio).toISOString().split('T')[0] : null;
-            const fechaFin = tarea.fecha_fin ? new Date(tarea.fecha_fin).toISOString().split('T')[0] : null;
+            // Validar que las fechas sean válidas antes de comparar
+            const fechaInicioDate = parseLocalDate(tarea.fecha_inicio);
+            const fechaFinDate = parseLocalDate(tarea.fecha_fin);
+
+            const fechaInicio = fechaInicioDate ? formatLocalDate(fechaInicioDate) : null;
+            const fechaFin = fechaFinDate ? formatLocalDate(fechaFinDate) : null;
 
             return fechaInicio === dateStr || fechaFin === dateStr;
         });
     };
 
     const getTareaTypeForDate = (date: Date, tarea: Tarea): 'inicio' | 'fin' | 'ambas' => {
-        const dateStr = date.toISOString().split('T')[0];
-        const fechaInicio = tarea.fecha_inicio ? new Date(tarea.fecha_inicio).toISOString().split('T')[0] : null;
-        const fechaFin = tarea.fecha_fin ? new Date(tarea.fecha_fin).toISOString().split('T')[0] : null;
+        const dateStr = formatLocalDate(date);
+
+        const fechaInicioDate = parseLocalDate(tarea.fecha_inicio);
+        const fechaFinDate = parseLocalDate(tarea.fecha_fin);
+
+        const fechaInicio = fechaInicioDate ? formatLocalDate(fechaInicioDate) : null;
+        const fechaFin = fechaFinDate ? formatLocalDate(fechaFinDate) : null;
 
         if (fechaInicio === dateStr && fechaFin === dateStr) return 'ambas';
         if (fechaInicio === dateStr) return 'inicio';
@@ -202,7 +265,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tareas }) => {
                             return (
                                 <div
                                     key={date.toISOString()}
-                                    className={`calendar-day ${isToday(date) ? 'calendar-day-today' : ''} ${isSelected(date) && !selectedTask ? 'calendar-day-selected' : ''}`}
+                                    className={`calendar-day ${isToday(date) ? 'calendar-day-today' : ''} ${isSelected(date) ? 'calendar-day-selected' : ''}`}
                                     onClick={() => handleDayClick(date)}
                                 >
                                     <div className="calendar-day-number">{date.getDate()}</div>
@@ -213,9 +276,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tareas }) => {
                                             return (
                                                 <div
                                                     key={`${tarea.id}-${tipo}`}
-                                                    className={`calendar-task-badge cursor-pointer ${tipoColorClass} ${selectedTask?.id === tarea.id ? 'ring-2 ring-blue-500' : ''}`}
+                                                    className={`calendar-task-badge ${tipoColorClass}`}
                                                     title={`${tarea.nombre} - ${tipo}`}
-                                                    onClick={(e) => handleTaskClick(tarea, e)}
+                                                    onMouseEnter={(e) => handleTaskMouseEnter(tarea, e)}
+                                                    onMouseLeave={handleTaskMouseLeave}
                                                 >
                                                     <span className="calendar-task-name">Tarea {tipo}</span>
                                                 </div>
@@ -230,25 +294,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tareas }) => {
                 </div>
             </div>
 
-            {/* Slide-over Panel */}
-            <>
-                <div className={`fixed inset-0 bg-gray-900/50 z-40 backdrop-blur-sm transition-opacity ${isPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                    onClick={closePanel}
-                ></div>
-                <div className={`fixed top-0 right-0 h-full bg-white dark:bg-gray-800 w-full max-w-md z-50 shadow-lg transform transition-transform duration-300 ease-in-out ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                    {selectedTask && (
-                        <>
-                            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start gap-4">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-1">{selectedTask.nombre}</h2>
-                                <Button variant="ghost" size="icon" onClick={closePanel} className="flex-shrink-0">
-                                    <X className="w-6 h-6" />
-                                </Button>
-                            </div>
-                            <DetailPanelContent task={selectedTask} />
-                        </>
-                    )}
-                </div>
-            </>
+            {/* Hover Card */}
+            {hoveredTask && <TaskHoverCard task={hoveredTask.task} position={hoveredTask.position} />}
         </div>
     );
 };
