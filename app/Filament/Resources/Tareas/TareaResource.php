@@ -8,6 +8,7 @@ use App\Models\TareaReasignacionHistorial;
 use App\Models\User;
 use App\Services\NotificacionService;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,8 +18,10 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Set;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -172,7 +175,8 @@ class TareaResource extends Resource
                                     ->maxValue(100)
                                     ->suffix('%')
                                     ->label('Porcentaje de Progreso')
-                                    ->helperText('Ingrese un valor entre 0 y 100'),
+                                    ->helperText('Ingrese un valor entre 0 y 100')
+                                    ->live(onBlur: true)
                             ]),
                     ])
                     ->columnSpanFull()
@@ -239,19 +243,27 @@ class TareaResource extends Resource
                                     ->grid(2)
                                     ->contained(false),
                             ]),
-                        // Mantengo tu Tab de Auditoría también
-                        Tabs\Tab::make('Auditoría')
-                            ->icon('heroicon-o-clock')
+
+                        Tabs\Tab::make('Historial de Seguimiento')
+                            ->icon('heroicon-o-archive-box')
+                            ->badge(fn ($record) => $record->auditorias()->count())
+                            ->visible(fn ($record) => $record->auditorias()->exists())
                             ->schema([
-                                Grid::make(2)
+                                RepeatableEntry::make('auditorias')
+                                    ->label('Seguimientos')
                                     ->schema([
                                         TextEntry::make('created_at')
-                                            ->label('Fecha de Creación')
+                                            ->label('Fecha de la Observación')
                                             ->dateTime('d/m/Y H:i:s'),
-                                        TextEntry::make('updated_at')
-                                            ->label('Última Actualización')
-                                            ->dateTime('d/m/Y H:i:s'),
-                                    ]),
+                                        TextEntry::make('usuario.name')
+                                            ->label('Observación realizada por'),
+                                        TextEntry::make('observacion')
+                                            ->label('Observación')
+                                            ->columnSpanFull()
+                                            ->placeholder('Sin observación.'),
+                                    ])
+                                    ->grid(2)
+                                    ->contained(false),
                             ]),
                     ])
                     ->columnSpanFull()
@@ -264,11 +276,10 @@ class TareaResource extends Resource
         return $table
             ->contentGrid([
                 'md' => 2,
-                'xl' => 2, // 2 Columnas para que se vea espacioso
+                'xl' => 2,
             ])
             ->columns([
                 Stack::make([
-                    // HEADER: Borde izquierdo con color + Título + Badge Prioridad
                     Split::make([
                         Stack::make([
                             TextColumn::make('nombre')
@@ -298,7 +309,6 @@ class TareaResource extends Resource
                         'style' => 'border-left: 4px solid ' . self::getPriorityColor($record->prioridad) . '; padding-left: 12px;',
                     ]),
 
-                    // BODY: Proyecto y Estado
                     Stack::make([
                         Split::make([
                             TextColumn::make('proyecto.nombre')
@@ -320,12 +330,10 @@ class TareaResource extends Resource
                         ]),
                     ])->extraAttributes(['class' => 'py-3']),
 
-                    // BARRA DE PROGRESO (Visualmente mejor que solo texto)
                     ViewColumn::make('progreso')
                         ->view('filament.tables.columns.progress-bar')
                         ->columnSpanFull(),
 
-                    // FOOTER: Avatar y Fecha Fin
                     Split::make([
                         Stack::make([
                             ImageColumn::make('usuario.name')
@@ -359,8 +367,28 @@ class TareaResource extends Resource
             ])
             ->filters([])
             ->recordActions([
+                Action::make('addObservation')
+                    ->label('Seguimiento')
+                    ->icon('heroicon-o-chat-bubble-bottom-center-text')
+                    ->color('info')
+                    ->modalHeading('Añadir Observación de Seguimiento')
+                    ->modalSubmitActionLabel('Guardar Observación')
+                    ->form([
+                        Textarea::make('observacion')
+                            ->label('Observación')
+                            ->required(),
+                    ])
+                    ->action(function (Tarea $record, array $data) {
+                        $record->auditorias()->create([
+                            'user_id' => auth()->id(),
+                            'observacion' => $data['observacion'],
+                        ]);
+                        Notification::make()
+                            ->title('Observación guardada con éxito')
+                            ->success()
+                            ->send();
+                    }),
                 ViewAction::make(),
-                // AQUÍ ESTÁ TU LÓGICA PERSONALIZADA DE EDICIÓN CONSERVADA
                 EditAction::make()
                     ->using(function (Model $record, array $data) {
                         $userIdAnterior = $record->getOriginal('user_id');
@@ -368,7 +396,6 @@ class TareaResource extends Resource
                         $estadoAnterior = $record->getOriginal('estado');
                         $estadoNuevo = $data['estado'] ?? $estadoAnterior;
 
-                        // Detectar reasignación de tarea
                         if ($userIdAnterior != $userIdNuevo) {
                             TareaReasignacionHistorial::create([
                                 'tarea_id' => $record->id,
@@ -378,7 +405,6 @@ class TareaResource extends Resource
                                 'motivo' => $data['reasignacion_motivo'] ?? null,
                             ]);
 
-                            // Notificar reasignación
                             $usuarioAnterior = $userIdAnterior ? User::find($userIdAnterior) : null;
                             $usuarioNuevo = User::find($userIdNuevo);
                             NotificacionService::notificarTareaReasignada(
@@ -390,7 +416,6 @@ class TareaResource extends Resource
                             );
                         }
 
-                        // Detectar cambio de estado
                         if ($estadoAnterior != $estadoNuevo) {
                             NotificacionService::notificarCambioEstadoTarea(
                                 $record,
@@ -400,7 +425,6 @@ class TareaResource extends Resource
                             );
                         }
 
-                        // Limpiamos el motivo antes de guardar la tarea (ya que no es columna de Tarea)
                         unset($data['reasignacion_motivo']);
                         $record->update($data);
                     }),
@@ -413,7 +437,6 @@ class TareaResource extends Resource
             ]);
     }
 
-    // Helper para el color del borde (necesario para el diseño visual)
     private static function getPriorityColor(int $priority): string
     {
         return match ($priority) {

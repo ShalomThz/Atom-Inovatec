@@ -113,4 +113,37 @@ class NotificacionService
             ]
         );
     }
+
+    public static function notificarVencimientoProximo($tarea, int $diasRestantes): void
+    {
+        if (!$tarea->user_id) {
+            return;
+        }
+
+        $usuario = User::find($tarea->user_id);
+        if (!$usuario) {
+            return;
+        }
+
+        $mensaje = "La tarea '{$tarea->nombre}' está próxima a vencer. ";
+        if ($diasRestantes > 1) {
+            $mensaje .= "Te quedan {$diasRestantes} días.";
+        } elseif ($diasRestantes === 1) {
+            $mensaje .= "Vence mañana.";
+        } else {
+            $mensaje .= "Vence hoy.";
+        }
+
+        self::crearNotificacion(
+            $usuario,
+            'tarea_vencimiento_proximo',
+            'Vencimiento de tarea próximo',
+            $mensaje,
+            $tarea,
+            [
+                'tarea_id' => $tarea->id,
+                'dias_restantes' => $diasRestantes,
+            ]
+        );
+    }
 }
