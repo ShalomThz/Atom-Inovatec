@@ -194,76 +194,301 @@ class TareaResource extends Resource
                             ->icon('heroicon-o-information-circle')
                             ->schema([
                                 Section::make('Información de la Tarea')
-                                    ->description('Datos principales de la tarea')
+                                    ->description('Datos principales y resumen de la tarea')
+                                    ->icon('heroicon-o-clipboard-document')
                                     ->schema([
+                                        TextEntry::make('nombre')
+                                            ->label('Nombre de la Tarea')
+                                            ->size('xl')
+                                            ->weight('bold')
+                                            ->icon('heroicon-o-clipboard-document-list')
+                                            ->iconColor('primary')
+                                            ->color('primary')
+                                            ->columnSpanFull(),
                                         Grid::make(['default' => 1, 'md' => 2])->schema([
-                                            TextEntry::make('nombre')
-                                                ->label('Nombre de la Tarea')
-                                                ->size('lg')
-                                                ->weight('bold')
-                                                ->icon('heroicon-o-clipboard-document-list')
-                                                ->color('primary'),
                                             TextEntry::make('proyecto.nombre')
                                                 ->label('Proyecto Asociado')
                                                 ->icon('heroicon-o-rectangle-stack')
                                                 ->iconColor('primary')
-                                                ->weight('bold'),
+                                                ->weight('semibold')
+                                                ->size('md')
+                                                ->color('primary'),
+                                            TextEntry::make('usuario.name')
+                                                ->label('Asignado a')
+                                                ->icon('heroicon-o-user-circle')
+                                                ->iconColor('success')
+                                                ->placeholder('Sin asignar')
+                                                ->weight('semibold')
+                                                ->size('md')
+                                                ->color('success'),
                                         ]),
-                                        Grid::make(['default' => 1, 'md' => 1])->schema([
-                                            TextEntry::make('descripcion')
-                                                ->label('Descripción')
-                                                ->placeholder('Sin descripción')
-                                                ->columnSpanFull(),
+                                        TextEntry::make('usuario.email')
+                                            ->label('Correo electrónico')
+                                            ->icon('heroicon-o-envelope')
+                                            ->iconColor('gray')
+                                            ->placeholder('Sin correo')
+                                            ->copyable()
+                                            ->copyMessage('Email copiado')
+                                            ->copyMessageDuration(1500)
+                                            ->color('gray')
+                                            ->size('sm'),
+                                        TextEntry::make('descripcion')
+                                            ->label('Descripción')
+                                            ->placeholder('Sin descripción')
+                                            ->columnSpanFull()
+                                            ->color('gray')
+                                            ->lineClamp(3),
+                                    ])
+                                    ->compact()
+                                    ->collapsible(),
+
+                                Section::make('Estado y Métricas')
+                                    ->description('Estado actual y progreso de la tarea')
+                                    ->icon('heroicon-o-chart-bar-square')
+                                    ->schema([
+                                        Grid::make(['default' => 2, 'md' => 4])->schema([
+                                            TextEntry::make('estado')
+                                                ->label('Estado')
+                                                ->badge()
+                                                ->size('lg')
+                                                ->weight('semibold')
+                                                ->formatStateUsing(fn (string $state): string => match ($state) {
+                                                    'pendiente' => 'Pendiente',
+                                                    'en_progreso' => 'En Progreso',
+                                                    'completada' => 'Completada',
+                                                    'cancelada' => 'Cancelada',
+                                                    default => ucfirst($state),
+                                                })
+                                                ->color(fn (string $state): string => match ($state) {
+                                                    'pendiente' => 'gray',
+                                                    'en_progreso' => 'warning',
+                                                    'completada' => 'success',
+                                                    'cancelada' => 'danger',
+                                                    default => 'gray',
+                                                })
+                                                ->icon(fn (string $state): string => match ($state) {
+                                                    'pendiente' => 'heroicon-o-clock',
+                                                    'en_progreso' => 'heroicon-o-arrow-path',
+                                                    'completada' => 'heroicon-o-check-circle',
+                                                    'cancelada' => 'heroicon-o-x-circle',
+                                                    default => 'heroicon-o-question-mark-circle',
+                                                }),
+                                            TextEntry::make('prioridad')
+                                                ->label('Prioridad')
+                                                ->badge()
+                                                ->size('lg')
+                                                ->weight('semibold')
+                                                ->formatStateUsing(fn (int $state): string => match ($state) {
+                                                    1 => 'Baja',
+                                                    2 => 'Media',
+                                                    3 => 'Alta',
+                                                    4 => 'Urgente',
+                                                    default => 'Desconocida',
+                                                })
+                                                ->color(fn (int $state): string => match ($state) {
+                                                    1 => 'success',
+                                                    2 => 'info',
+                                                    3 => 'warning',
+                                                    4 => 'danger',
+                                                    default => 'gray',
+                                                })
+                                                ->icon(fn (int $state): string => match ($state) {
+                                                    1 => 'heroicon-o-arrow-down',
+                                                    2 => 'heroicon-o-minus',
+                                                    3 => 'heroicon-o-arrow-up',
+                                                    4 => 'heroicon-o-exclamation-triangle',
+                                                    default => 'heroicon-o-question-mark-circle',
+                                                }),
+                                            TextEntry::make('progreso')
+                                                ->label('Progreso')
+                                                ->suffix('%')
+                                                ->badge()
+                                                ->size('lg')
+                                                ->weight('semibold')
+                                                ->icon('heroicon-o-chart-bar')
+                                                ->color(fn (int $state): string => match (true) {
+                                                    $state === 100 => 'success',
+                                                    $state >= 75 => 'info',
+                                                    $state >= 50 => 'warning',
+                                                    default => 'gray',
+                                                }),
+                                            TextEntry::make('dias_para_vencer')
+                                                ->label('Vencimiento')
+                                                ->state(function ($record) {
+                                                    if (!$record->fecha_fin) return 'Sin fecha límite';
+                                                    $hoy = \Carbon\Carbon::now();
+                                                    $fin = \Carbon\Carbon::parse($record->fecha_fin);
+                                                    if ($hoy->greaterThan($fin)) {
+                                                        return 'Vencida';
+                                                    }
+                                                    $dias = (int) $hoy->diffInDays($fin);
+                                                    if ($dias === 0) return 'Vence hoy';
+                                                    if ($dias === 1) return 'Vence mañana';
+                                                    return $dias . ' días';
+                                                })
+                                                ->badge()
+                                                ->size('lg')
+                                                ->weight('semibold')
+                                                ->color(function ($record): string {
+                                                    if (!$record->fecha_fin) return 'gray';
+                                                    $hoy = \Carbon\Carbon::now();
+                                                    $fin = \Carbon\Carbon::parse($record->fecha_fin);
+                                                    if ($hoy->greaterThan($fin)) return 'danger';
+                                                    $dias = (int) $hoy->diffInDays($fin);
+                                                    if ($dias <= 3) return 'danger';
+                                                    if ($dias <= 7) return 'warning';
+                                                    return 'success';
+                                                })
+                                                ->icon(fn ($record) => !$record->fecha_fin ? 'heroicon-o-minus' : (\Carbon\Carbon::now()->greaterThan(\Carbon\Carbon::parse($record->fecha_fin)) ? 'heroicon-o-exclamation-circle' : 'heroicon-o-clock')),
                                         ]),
                                     ])
                                     ->compact(),
+
+                                Section::make('Cronograma')
+                                    ->description('Fechas de inicio y finalización de la tarea')
+                                    ->icon('heroicon-o-calendar-days')
+                                    ->iconColor('primary')
+                                    ->schema([
+                                        Grid::make(['default' => 1, 'md' => 3])->schema([
+                                            TextEntry::make('fecha_inicio')
+                                                ->label('Inicia')
+                                                ->icon('heroicon-o-calendar')
+                                                ->iconColor('success')
+                                                ->date('d/m/Y')
+                                                ->placeholder('No definida')
+                                                ->weight('medium')
+                                                ->color('success')
+                                                ->size('md'),
+                                            TextEntry::make('fecha_fin')
+                                                ->label('Finaliza')
+                                                ->icon('heroicon-o-calendar')
+                                                ->iconColor('danger')
+                                                ->date('d/m/Y')
+                                                ->placeholder('No definida')
+                                                ->weight('medium')
+                                                ->color('danger')
+                                                ->size('md'),
+                                            TextEntry::make('duracion')
+                                                ->label('Duración')
+                                                ->state(function ($record) {
+                                                    if (!$record->fecha_inicio || !$record->fecha_fin) {
+                                                        return 'N/A';
+                                                    }
+                                                    $inicio = \Carbon\Carbon::parse($record->fecha_inicio);
+                                                    $fin = \Carbon\Carbon::parse($record->fecha_fin);
+                                                    $dias = (int) $inicio->diffInDays($fin);
+                                                    return $dias . ' días';
+                                                })
+                                                ->icon('heroicon-o-clock')
+                                                ->iconColor('primary')
+                                                ->badge()
+                                                ->color('info')
+                                                ->size('md'),
+                                        ]),
+                                    ])
+                                    ->compact()
+                                    ->collapsible()
+                                    ->collapsed(),
                             ]),
                         Tabs\Tab::make('Historial de Reasignación')
                             ->icon('heroicon-o-arrows-right-left')
                             ->badge(fn ($record) => $record->reasignacionHistorial()->count())
                             ->visible(fn ($record) => $record->reasignacionHistorial()->exists())
                             ->schema([
-                                RepeatableEntry::make('reasignacionHistorial')
-                                    ->label('')
+                                Section::make('Reasignaciones de la Tarea')
+                                    ->description('Registro cronológico de todas las reasignaciones')
+                                    ->icon('heroicon-o-clock')
+                                    ->iconColor('primary')
                                     ->schema([
-                                        TextEntry::make('created_at')
-                                            ->label('Fecha del Cambio')
-                                            ->dateTime('d/m/Y H:i:s'),
-                                        TextEntry::make('modificadoPor.name')
-                                            ->label('Cambio realizado por'),
-                                        TextEntry::make('usuarioAnterior.name')
-                                            ->label('Asignado Anteriormente a')
-                                            ->placeholder('N/A'),
-                                        TextEntry::make('usuarioNuevo.name')
-                                            ->label('Asignado a'),
-                                        TextEntry::make('motivo')
-                                            ->label('Motivo del cambio')
-                                            ->placeholder('Sin motivo especificado.'),
+                                        RepeatableEntry::make('reasignacionHistorial')
+                                            ->label('')
+                                            ->schema([
+                                                Grid::make(['default' => 1])->schema([
+                                                    TextEntry::make('created_at')
+                                                        ->label('')
+                                                        ->dateTime('d/m/Y H:i:s')
+                                                        ->icon('heroicon-o-calendar-days')
+                                                        ->iconColor('primary')
+                                                        ->weight('bold')
+                                                        ->size('md')
+                                                        ->color('primary'),
+                                                    Grid::make(['default' => 1, 'md' => 3])->schema([
+                                                        TextEntry::make('modificadoPor.name')
+                                                            ->label('Modificado por')
+                                                            ->icon('heroicon-o-user-circle')
+                                                            ->iconColor('primary')
+                                                            ->size('sm')
+                                                            ->weight('medium'),
+                                                        TextEntry::make('usuarioAnterior.name')
+                                                            ->label('Reasignado de')
+                                                            ->placeholder('Sin asignación previa')
+                                                            ->icon('heroicon-o-arrow-left-circle')
+                                                            ->iconColor('gray')
+                                                            ->color('gray')
+                                                            ->size('sm'),
+                                                        TextEntry::make('usuarioNuevo.name')
+                                                            ->label('Reasignado a')
+                                                            ->icon('heroicon-o-arrow-right-circle')
+                                                            ->iconColor('success')
+                                                            ->color('success')
+                                                            ->weight('bold')
+                                                            ->size('sm'),
+                                                    ]),
+                                                    TextEntry::make('motivo')
+                                                        ->label('Motivo de reasignación')
+                                                        ->placeholder('No se especificó un motivo')
+                                                        ->columnSpanFull()
+                                                        ->color('gray')
+                                                        ->size('sm'),
+                                                ]),
+                                            ])
+                                            ->contained(true)
+                                            ->placeholder('No hay historial de reasignaciones'),
                                     ])
-                                    ->grid(2)
-                                    ->contained(false),
+                                    ->collapsible(),
                             ]),
 
                         Tabs\Tab::make('Historial de Seguimiento')
-                            ->icon('heroicon-o-archive-box')
+                            ->icon('heroicon-o-chat-bubble-left-right')
                             ->badge(fn ($record) => $record->auditorias()->count())
                             ->visible(fn ($record) => $record->auditorias()->exists())
                             ->schema([
-                                RepeatableEntry::make('auditorias')
-                                    ->label('Seguimientos')
+                                Section::make('Observaciones de Seguimiento')
+                                    ->description('Registro cronológico de todas las observaciones')
+                                    ->icon('heroicon-o-document-text')
+                                    ->iconColor('warning')
                                     ->schema([
-                                        TextEntry::make('created_at')
-                                            ->label('Fecha de la Observación')
-                                            ->dateTime('d/m/Y H:i:s'),
-                                        TextEntry::make('usuario.name')
-                                            ->label('Observación realizada por'),
-                                        TextEntry::make('observacion')
-                                            ->label('Observación')
-                                            ->columnSpanFull()
-                                            ->placeholder('Sin observación.'),
+                                        RepeatableEntry::make('auditorias')
+                                            ->label('')
+                                            ->schema([
+                                                Grid::make(['default' => 1])->schema([
+                                                    TextEntry::make('created_at')
+                                                        ->label('')
+                                                        ->dateTime('d/m/Y H:i:s')
+                                                        ->icon('heroicon-o-calendar-days')
+                                                        ->iconColor('warning')
+                                                        ->weight('bold')
+                                                        ->size('md')
+                                                        ->color('warning'),
+                                                    TextEntry::make('usuario.name')
+                                                        ->label('Observación realizada por')
+                                                        ->icon('heroicon-o-user-circle')
+                                                        ->iconColor('primary')
+                                                        ->color('primary')
+                                                        ->weight('medium')
+                                                        ->size('sm'),
+                                                    TextEntry::make('observacion')
+                                                        ->label('Detalle de la observación')
+                                                        ->columnSpanFull()
+                                                        ->placeholder('Sin detalle')
+                                                        ->color('gray')
+                                                        ->size('sm'),
+                                                ]),
+                                            ])
+                                            ->contained(true)
+                                            ->placeholder('No hay observaciones registradas'),
                                     ])
-                                    ->grid(2)
-                                    ->contained(false),
+                                    ->collapsible(),
                             ]),
                     ])
                     ->columnSpanFull()
