@@ -173,13 +173,25 @@
 }
 
 .calendar-task-type {
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
+    font-size: 0.625rem !important;
+    margin-right: 0.25rem !important;
 }
 
 .calendar-task-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-weight: 600 !important;
+}
+
+.calendar-task-project {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    opacity: 0.8 !important;
+    font-size: 0.7rem !important;
+    margin-left: 0.25rem !important;
 }
 
 .calendar-task-more {

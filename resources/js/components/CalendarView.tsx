@@ -273,15 +273,20 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tareas }) => {
                                         {tareasDelDia.slice(0, 3).map(tarea => {
                                             const tipo = getTareaTypeForDate(date, tarea);
                                             const tipoColorClass = tipo === 'inicio' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200';
+                                            const tipoIcon = tipo === 'inicio' ? '▶' : tipo === 'fin' ? '■' : '●';
                                             return (
                                                 <div
                                                     key={`${tarea.id}-${tipo}`}
                                                     className={`calendar-task-badge ${tipoColorClass}`}
-                                                    title={`${tarea.nombre} - ${tipo}`}
+                                                    title={`${tarea.nombre} - ${tarea.proyecto || 'Sin proyecto'} (${tipo})`}
                                                     onMouseEnter={(e) => handleTaskMouseEnter(tarea, e)}
                                                     onMouseLeave={handleTaskMouseLeave}
                                                 >
-                                                    <span className="calendar-task-name">Tarea {tipo}</span>
+                                                    <span className="calendar-task-type">{tipoIcon}</span>
+                                                    <span className="calendar-task-name">{tarea.nombre}</span>
+                                                    {tarea.proyecto && (
+                                                        <span className="calendar-task-project">· {tarea.proyecto}</span>
+                                                    )}
                                                 </div>
                                             );
                                         })}
