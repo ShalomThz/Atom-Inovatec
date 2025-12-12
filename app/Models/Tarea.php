@@ -47,4 +47,12 @@ class Tarea extends Model
     {
         return $this->hasMany(TareaReasignacionHistorial::class)->latest();
     }
+
+    /**
+     * Relación: Una tarea tiene muchos registros de auditoría
+     */
+    public function auditorias(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(TareaAuditoria::class)->latest();
+    }
 }

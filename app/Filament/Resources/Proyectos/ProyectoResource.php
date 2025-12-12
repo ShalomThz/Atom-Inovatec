@@ -23,6 +23,9 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\Layout\Stack;
+use Filament\Tables\Columns\Layout\Split;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -407,34 +410,93 @@ class ProyectoResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->contentGrid([
+                'md' => 2,
+                'xl' => 2,
+            ])
             ->columns([
-                TextColumn::make('nombre')
-                    ->searchable(),
-                TextColumn::make('user_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('fecha_inicio')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('fecha_fin')
-                    ->date()
-                    ->sortable(),
-                TextColumn::make('estado')
-                    ->searchable(),
-                TextColumn::make('presupuesto')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('prioridad')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Stack::make([
+                    Split::make([
+                        Stack::make([
+                            TextColumn::make('nombre')
+                                ->weight('bold')
+                                ->size('lg')
+                                ->searchable()
+                                ->icon('heroicon-o-briefcase'), // Project icon
+                        ])->space(1),
+                        
+                        TextColumn::make('prioridad')
+                            ->badge()
+                            ->color(fn (int $state): string => match ($state) {
+                                1 => 'success',
+                                2 => 'info',
+                                3 => 'warning',
+                                4 => 'danger',
+                                default => 'gray',
+                            })
+                            ->formatStateUsing(fn (int $state): string => match ($state) {
+                                1 => 'Baja',
+                                2 => 'Media',
+                                3 => 'Alta',
+                                4 => 'Urgente',
+                                default => 'Desc.',
+                            }),
+                    ])->extraAttributes(fn (Proyecto $record): array => [
+                        'class' => 'items-center', 
+                        'style' => 'border-left: 4px solid ' . self::getPriorityColor($record->prioridad) . '; padding-left: 12px;',
+                    ]),
+
+                    Stack::make([
+                        Split::make([
+                             TextColumn::make('estado')
+                                ->badge()
+                                ->formatStateUsing(fn (string $state): string => ucfirst(str_replace('_', ' ', $state)))
+                                ->color(fn (string $state): string => match ($state) {
+                                    'pendiente' => 'gray',
+                                    'en_progreso' => 'warning',
+                                    'completado' => 'success',
+                                    'cancelado' => 'danger',
+                                    default => 'gray',
+                                }),
+                            TextColumn::make('tasks_count') // Show tasks count
+                                ->counts('tareas')
+                                ->label('Tareas')
+                                ->icon('heroicon-o-clipboard-document-list')
+                                ->color('gray')
+                                ->size('sm'),
+                        ]),
+                    ])->extraAttributes(['class' => 'py-3']),
+
+                    Split::make([
+                        TextColumn::make('usuario.name') // Creator's name
+                            ->color('gray')
+                            ->size('xs')
+                            ->icon('heroicon-o-user')
+                            ->placeholder('Sin creador'),
+                        
+                        TextColumn::make('fecha_fin')
+                            ->icon('heroicon-o-calendar')
+                            ->color('gray')
+                            ->size('xs')
+                            ->date('d M Y')
+                            ->placeholder('Sin fecha'),
+                    ])
+                    ->extraAttributes([
+                        'class' => 'pt-3 mt-2 border-t border-gray-100 dark:border-gray-700 items-center',
+                    ]),
+                ])
+                ->space(1)
+                ->extraAttributes(function (Proyecto $record): array {
+                    $baseClasses = 'p-5 rounded-xl shadow-sm ring-1 ring-gray-950/5 dark:ring-white/10 hover:shadow-lg transition-shadow duration-300';
+                    $colorClasses = match ($record->prioridad) {
+                        1 => 'bg-green-50 dark:bg-green-950/20',
+                        2 => 'bg-blue-50 dark:bg-blue-950/20',
+                        3 => 'bg-yellow-50 dark:bg-yellow-950/20',
+                        4 => 'bg-red-50 dark:bg-red-950/20',
+                        default => 'bg-white dark:bg-gray-900',
+                    };
+                    return ['class' => "{$baseClasses} {$colorClasses}"];
+                }),
             ])
             ->filters([
                 //
@@ -456,5 +518,16 @@ class ProyectoResource extends Resource
         return [
             'index' => ManageProyectos::route('/'),
         ];
+    }
+
+    private static function getPriorityColor(int $priority): string
+    {
+        return match ($priority) {
+            1 => '#22c55e', // Success (Baja)
+            2 => '#3b82f6', // Info (Media)
+            3 => '#eab308', // Warning (Alta)
+            4 => '#ef4444', // Danger (Urgente)
+            default => '#9ca3af', // Gray
+        };
     }
 }
