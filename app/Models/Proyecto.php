@@ -67,8 +67,8 @@ class Proyecto extends Model
             'total' => $tareas->count(),
             'pendientes' => $tareas->where('estado', 'pendiente')->count(),
             'en_progreso' => $tareas->where('estado', 'en_progreso')->count(),
-            'completadas' => $tareas->where('estado', 'completado')->count(),
-            'canceladas' => $tareas->where('estado', 'cancelado')->count(),
+            'completadas' => $tareas->where('estado', 'completada')->count(),
+            'canceladas' => $tareas->where('estado', 'cancelada')->count(),
         ];
     }
 
@@ -99,7 +99,7 @@ class Proyecto extends Model
             return 0;
         }
 
-        $completadas = $tareas->where('estado', 'completado')->count();
+        $completadas = $tareas->where('estado', 'completada')->count();
         return round(($completadas / $tareas->count()) * 100, 2);
     }
 }

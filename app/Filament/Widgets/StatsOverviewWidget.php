@@ -18,7 +18,7 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
 
         $tareasTotal = Tarea::count();
         $tareasPendientes = Tarea::where('estado', 'pendiente')->count();
-        $tareasCompletadas = Tarea::where('estado', 'completado')->count();
+        $tareasCompletadas = Tarea::where('estado', 'completada')->count();
 
         $usuariosTotal = User::count();
 
