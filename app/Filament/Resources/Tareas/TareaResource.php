@@ -109,27 +109,6 @@ class TareaResource extends Resource
                                     ->columnSpanFull(),
                             ]),
 
-                        Tabs\Tab::make('Asignación')
-                            ->icon('heroicon-o-user')
-                            ->schema([
-                                Select::make('user_id')
-                                    ->relationship(
-                                        name: 'usuario',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: fn (Builder $query, ?Tarea $record): Builder => $record ? $query->where('id', '!=', $record->user_id) : $query
-                                    )
-                                    ->searchable()
-                                    ->preload()
-                                    ->required()
-                                    ->label('Asignado a')
-                                    ->placeholder('Seleccione un usuario')
-                                    ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
-                                Textarea::make('reasignacion_motivo')
-                                    ->label('Motivo de Reasignación (si aplica)')
-                                    ->rows(4)
-                                    ->disabled(fn () => Auth::user()->hasRole('desarrollador')),
-                            ]),
-
                         Tabs\Tab::make('Fechas y Estado')
                             ->icon('heroicon-o-calendar')
                             ->schema([
@@ -613,33 +592,65 @@ class TareaResource extends Resource
                             ->success()
                             ->send();
                     }),
+                Action::make('reassignTask')
+                    ->label('Reasignar')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->color('warning')
+                    ->modalHeading('Reasignar Tarea')
+                    ->modalSubmitActionLabel('Confirmar Reasignación')
+                    ->form(fn (Tarea $record) => [
+                        Select::make('user_id')
+                            ->label('Asignar a')
+                            ->options(User::query()->where('id', '!=', $record->user_id)->pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                        Textarea::make('reasignacion_motivo')
+                            ->label('Motivo de Reasignación')
+                            ->required(),
+                    ])
+                    ->action(function (Tarea $record, array $data) {
+                        $userIdAnterior = $record->user_id;
+                        $userIdNuevo = $data['user_id'];
+
+                        if ($userIdAnterior == $userIdNuevo) {
+                            Notification::make()
+                                ->title('No se puede reasignar al mismo usuario')
+                                ->warning()
+                                ->send();
+                            return;
+                        }
+
+                        TareaReasignacionHistorial::create([
+                            'tarea_id' => $record->id,
+                            'usuario_anterior_id' => $userIdAnterior,
+                            'usuario_nuevo_id' => $userIdNuevo,
+                            'modificado_por_id' => auth()->id(),
+                            'motivo' => $data['reasignacion_motivo'],
+                        ]);
+
+                        $usuarioAnterior = $userIdAnterior ? User::find($userIdAnterior) : null;
+                        $usuarioNuevo = User::find($userIdNuevo);
+                        NotificacionService::notificarTareaReasignada(
+                            $record,
+                            $usuarioAnterior,
+                            $usuarioNuevo,
+                            auth()->user(),
+                            $data['reasignacion_motivo']
+                        );
+
+                        $record->update(['user_id' => $userIdNuevo]);
+
+                        Notification::make()
+                            ->title('Tarea Reasignada')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn () => !Auth::user()->hasRole('desarrollador')),
                 ViewAction::make(),
                 EditAction::make()
                     ->using(function (Model $record, array $data) {
-                        $userIdAnterior = $record->getOriginal('user_id');
-                        $userIdNuevo = $data['user_id'];
                         $estadoAnterior = $record->getOriginal('estado');
                         $estadoNuevo = $data['estado'] ?? $estadoAnterior;
-
-                        if ($userIdAnterior != $userIdNuevo) {
-                            TareaReasignacionHistorial::create([
-                                'tarea_id' => $record->id,
-                                'usuario_anterior_id' => $userIdAnterior,
-                                'usuario_nuevo_id' => $userIdNuevo,
-                                'modificado_por_id' => auth()->id(),
-                                'motivo' => $data['reasignacion_motivo'] ?? null,
-                            ]);
-
-                            $usuarioAnterior = $userIdAnterior ? User::find($userIdAnterior) : null;
-                            $usuarioNuevo = User::find($userIdNuevo);
-                            NotificacionService::notificarTareaReasignada(
-                                $record,
-                                $usuarioAnterior,
-                                $usuarioNuevo,
-                                auth()->user(),
-                                $data['reasignacion_motivo'] ?? null
-                            );
-                        }
 
                         if ($estadoAnterior != $estadoNuevo) {
                             NotificacionService::notificarCambioEstadoTarea(
@@ -650,7 +661,6 @@ class TareaResource extends Resource
                             );
                         }
 
-                        unset($data['reasignacion_motivo']);
                         $record->update($data);
                     }),
                 DeleteAction::make(),

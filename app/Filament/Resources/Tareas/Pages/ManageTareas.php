@@ -25,3 +25,4 @@ class ManageTareas extends ManageRecords
         ];
     }
 }
+ 
