@@ -110,7 +110,7 @@ class TareaResource extends Resource
                                                 ->whereRaw('DATE(fecha_fin) = ?', [$endDate]);
 
                                             if ($record) { $query->where('id', '!=', $record->id); }
-                                            if ($query->exists()) { $fail('Ya existe una tarea exactamente igual (mismo nombre, usuario y fechas).'); }
+                                            if ($query->exists()) { $fail('Ya existe una tarea exactamente igual (mismo nombre, usuario y fechas). O con el mismo intervalo de fechas.'); }
                                         };
                                     }),
                                 Textarea::make('descripcion')
@@ -158,8 +158,10 @@ class TareaResource extends Resource
                                             if ($record) { $query->where('id', '!=', $record->id); }
 
                                             if ($query->exists()) {
+                                                $message = 'Este usuario ya tiene una tarea programada exactamente para el mismo período de tiempo.';
+                                                $fail($message);
                                                 throw \Illuminate\Validation\ValidationException::withMessages([
-                                                    $attribute => 'Este usuario ya tiene una tarea programada exactamente para el mismo período de tiempo.',
+                                                    $attribute => $message,
                                                 ]);
                                             }
                                         };
