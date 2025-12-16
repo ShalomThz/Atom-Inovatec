@@ -81,17 +81,9 @@ class TareaResource extends Resource
                                         titleAttribute: 'nombre',
                                         modifyQueryUsing: function (Builder $query) {
                                             $user = Auth::user();
-                                            if ($user->hasRole('super_admin')) {
-                                                return $query;
-                                            }
-                                            if ($user->hasRole('lider_proyecto')) {
-                                                return $query->where('user_id', $user->id);
-                                            }
-                                            if ($user->hasRole('desarrollador')) {
-                                                return $query->whereHas('tareas', function (Builder $q) use ($user) {
-                                                    $q->where('user_id', $user->id);
-                                                });
-                                            }
+                                            if ($user->hasRole('super_admin')) { return $query; }
+                                            if ($user->hasRole('lider_proyecto')) { return $query->where('user_id', $user->id); }
+                                            if ($user->hasRole('desarrollador')) { return $query->whereHas('tareas', function (Builder $q) use ($user) { $q->where('user_id', $user->id); }); }
                                             return $query->whereRaw('1 = 0');
                                         }
                                     )
@@ -103,10 +95,40 @@ class TareaResource extends Resource
                                 TextInput::make('nombre')
                                     ->required()
                                     ->maxLength(255)
-                                    ->columnSpanFull(),
+                                    ->columnSpanFull()
+                                    ->rule(function ($get, ?Tarea $record) {
+                                        return function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                            $userId = $record ? $record->user_id : $get('user_id');
+                                            $startDate = $get('fecha_inicio');
+                                            $endDate = $get('fecha_fin');
+                                            $taskName = $value;
+                                            if (empty($taskName) || empty($userId) || empty($startDate) || empty($endDate)) { return; }
+
+                                            $query = Tarea::where('nombre', $taskName)
+                                                ->where('user_id', $userId)
+                                                ->whereRaw('DATE(fecha_inicio) = ?', [$startDate])
+                                                ->whereRaw('DATE(fecha_fin) = ?', [$endDate]);
+
+                                            if ($record) { $query->where('id', '!=', $record->id); }
+                                            if ($query->exists()) { $fail('Ya existe una tarea exactamente igual (mismo nombre, usuario y fechas).'); }
+                                        };
+                                    }),
                                 Textarea::make('descripcion')
                                     ->rows(4)
                                     ->columnSpanFull(),
+                            ]),
+
+                        Tabs\Tab::make('Asignación')
+                            ->icon('heroicon-o-user')
+                            ->schema([
+                                Select::make('user_id')
+                                    ->relationship('usuario', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->label('Asignado a')
+                                    ->placeholder('Seleccione un usuario')
+                                    ->disabled(fn (string $operation) => $operation === 'edit' || Auth::user()->hasRole('desarrollador')),
                             ]),
 
                         Tabs\Tab::make('Fechas y Estado')
@@ -120,25 +142,40 @@ class TareaResource extends Resource
                                     ->native(false)
                                     ->displayFormat('d/m/Y')
                                     ->after('fecha_inicio')
-                                    ->label('Fecha de Fin'),
+                                    ->label('Fecha de Fin')
+                                    ->rule(function ($get, ?Tarea $record) {
+                                        return function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                            $userId = $record ? $record->user_id : $get('user_id');
+                                            $startDate = $get('fecha_inicio');
+                                            $endDate = $value;
+
+                                            if (empty($userId) || empty($startDate) || empty($endDate)) { return; }
+
+                                            $query = Tarea::where('user_id', $userId)
+                                                ->whereRaw('DATE(fecha_inicio) = ?', [$startDate])
+                                                ->whereRaw('DATE(fecha_fin) = ?', [$endDate]);
+
+                                            if ($record) { $query->where('id', '!=', $record->id); }
+
+                                            if ($query->exists()) {
+                                                throw \Illuminate\Validation\ValidationException::withMessages([
+                                                    $attribute => 'Este usuario ya tiene una tarea programada exactamente para el mismo período de tiempo.',
+                                                ]);
+                                            }
+                                        };
+                                    }),
                                 Select::make('estado')
                                     ->required()
-                                    ->options([
-                                        'pendiente' => 'Pendiente',
-                                        'en_progreso' => 'En Progreso',
-                                        'completado' => 'Completado',
-                                        'cancelado' => 'Cancelado',
-                                    ])
+                                    ->options(function (string $operation): array {
+                                        $options = ['pendiente' => 'Pendiente', 'en_progreso' => 'En Progreso', 'cancelado' => 'Cancelado'];
+                                        if ($operation === 'edit') { $options['completado'] = 'Completado'; }
+                                        return $options;
+                                    })
                                     ->default('pendiente')
                                     ->native(false),
                                 Select::make('prioridad')
                                     ->required()
-                                    ->options([
-                                        1 => 'Baja',
-                                        2 => 'Media',
-                                        3 => 'Alta',
-                                        4 => 'Urgente',
-                                    ])
+                                    ->options([1 => 'Baja', 2 => 'Media', 3 => 'Alta', 4 => 'Urgente'])
                                     ->default(1)
                                     ->native(false),
                             ])->columns(2),
@@ -570,6 +607,35 @@ class TareaResource extends Resource
                 ]),
             ])
             ->filters([])
+            ->headerActions([
+                \Filament\Actions\CreateAction::make()
+                    ->before(function (array $data) {
+                        if (empty($data['user_id']) || empty($data['fecha_inicio']) || empty($data['fecha_fin']) || empty($data['nombre'])) {
+                            return; // Let native required rules handle it
+                        }
+    
+                        // Check 1: User-Date uniqueness
+                        $query1 = Tarea::where('user_id', $data['user_id'])
+                            ->whereDate('fecha_inicio', $data['fecha_inicio'])
+                            ->whereDate('fecha_fin', $data['fecha_fin']);
+                        if ($query1->exists()) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'data.fecha_fin' => 'Este usuario ya tiene una tarea programada exactamente para el mismo período de tiempo.',
+                            ]);
+                        }
+    
+                        // Check 2: Exact duplicate
+                        $query2 = Tarea::where('nombre', $data['nombre'])
+                            ->where('user_id', $data['user_id'])
+                            ->whereDate('fecha_inicio', $data['fecha_inicio'])
+                            ->whereDate('fecha_fin', $data['fecha_fin']);
+                        if ($query2->exists()) {
+                            throw \Illuminate\Validation\ValidationException::withMessages([
+                                'data.nombre' => 'Ya existe una tarea exactamente igual (mismo nombre, usuario y fechas).',
+                            ]);
+                        }
+                    }),
+            ])
             ->recordActions([
                 Action::make('addObservation')
                     ->label('Seguimiento')
@@ -649,18 +715,46 @@ class TareaResource extends Resource
                 ViewAction::make(),
                 EditAction::make()
                     ->using(function (Model $record, array $data) {
-                        $estadoAnterior = $record->getOriginal('estado');
-                        $estadoNuevo = $data['estado'] ?? $estadoAnterior;
+                        // Imperative validation
+                        $userId = $record->user_id;
+                        $startDate = $data['fecha_inicio'] ?? $record->fecha_inicio;
+                        $endDate = $data['fecha_fin'] ?? $record->fecha_fin;
+                        $taskName = $data['nombre'] ?? $record->nombre;
 
-                        if ($estadoAnterior != $estadoNuevo) {
-                            NotificacionService::notificarCambioEstadoTarea(
-                                $record,
-                                $estadoAnterior,
-                                $estadoNuevo,
-                                auth()->user()
-                            );
+                        if (!empty($userId) && !empty($startDate) && !empty($endDate)) {
+                             // Check 1: User-Date uniqueness
+                            $query1 = Tarea::where('user_id', $userId)
+                                ->whereDate('fecha_inicio', $startDate)
+                                ->whereDate('fecha_fin', $endDate)
+                                ->where('id', '!=', $record->id);
+                            if ($query1->exists()) {
+                                throw \Illuminate\Validation\ValidationException::withMessages([
+                                    'data.fecha_fin' => 'Este usuario ya tiene una tarea programada exactamente para el mismo período de tiempo.',
+                                ]);
+                            }
+
+                            // Check 2: Exact duplicate
+                            if (!empty($taskName)) {
+                                $query2 = Tarea::where('nombre', $taskName)
+                                    ->where('user_id', $userId)
+                                    ->whereDate('fecha_inicio', $startDate)
+                                    ->whereDate('fecha_fin', $endDate)
+                                    ->where('id', '!=', $record->id);
+                                if ($query2->exists()) {
+                                    throw \Illuminate\Validation\ValidationException::withMessages([
+                                        'data.nombre' => 'Ya existe una tarea exactamente igual (mismo nombre, usuario y fechas).',
+                                    ]);
+                                }
+                            }
                         }
 
+                        // Original logic for notifications and update
+                        $estadoAnterior = $record->getOriginal('estado');
+                        $estadoNuevo = $data['estado'] ?? $estadoAnterior;
+                        if ($estadoAnterior != $estadoNuevo) {
+                            NotificacionService::notificarCambioEstadoTarea($record, $estadoAnterior, $estadoNuevo, auth()->user());
+                        }
+                        
                         $record->update($data);
                     }),
                 DeleteAction::make(),
