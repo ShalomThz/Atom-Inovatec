@@ -13,31 +13,106 @@ use Illuminate\Support\Facades\DB;
 
 class ReporteController extends Controller
 {
-    public function generarPdfProyectos()
+    public function generarPdfProyectos(Request $request)
     {
         $user = Auth::user();
         $query = Proyecto::with(['tareas.usuario', 'usuario']);
 
-        // Aplicar filtros según el rol del usuario
-        if ($user->hasRole('super_admin')) {
-            // Super admin ve todos los proyectos
-        } elseif ($user->hasRole('lider_proyecto')) {
-            // Líder ve solo sus proyectos
+        // 1. Filtros de seguridad por ROL (se mantienen)
+        if ($user->hasRole('lider_proyecto')) {
             $query->where('user_id', $user->id);
         } elseif ($user->hasRole('desarrollador')) {
-            // Desarrollador ve proyectos donde tiene tareas asignadas
             $query->whereHas('tareas', function (Builder $q) use ($user) {
                 $q->where('user_id', $user->id);
             });
-        } else {
-            // Si no tiene rol, no ver nada
-            $query->whereRaw('1 = 0');
+        } elseif (!$user->hasRole('super_admin')) {
+            $query->whereRaw('1 = 0'); // No ver nada si no es super_admin y no tiene otro rol
+        }
+
+        // 2. Filtros del formulario
+        $filtrosActivos = [];
+        
+        // Filtros de Proyecto
+        if ($request->filled('proyecto_id')) {
+            $query->where('id', $request->proyecto_id);
+            $filtrosActivos['Proyecto'] = Proyecto::find($request->proyecto_id)?->nombre;
+        }
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+            $filtrosActivos['Líder'] = User::find($request->user_id)?->name;
+        }
+        if ($request->filled('estado_proyecto')) {
+            $query->where('estado', $request->estado_proyecto);
+            $filtrosActivos['Estado Proyecto'] = ucfirst(str_replace('_', ' ', $request->estado_proyecto));
+        }
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+            $filtrosActivos['Estado'] = ucfirst(str_replace('_', ' ', $request->estado));
+        }
+        if ($request->filled('prioridad')) {
+            $query->where('prioridad', $request->prioridad);
+            $filtrosActivos['Prioridad Proyecto'] = ucfirst($request->prioridad);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->where('fecha_inicio', '>=', $request->fecha_desde);
+            $filtrosActivos['Desde'] = \Carbon\Carbon::parse($request->fecha_desde)->format('d/m/Y');
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->where('fecha_fin', '<=', $request->fecha_hasta);
+            $filtrosActivos['Hasta'] = \Carbon\Carbon::parse($request->fecha_hasta)->format('d/m/Y');
+        }
+
+        // Filtros de Tareas
+        if ($request->filled('empleado_id')) {
+            $query->whereHas('tareas', function (Builder $q) use ($request) {
+                $q->where('user_id', $request->empleado_id);
+            });
+            $filtrosActivos['Empleado'] = User::find($request->empleado_id)?->name;
+        }
+        if ($request->filled('estado_tarea')) {
+            $query->whereHas('tareas', function (Builder $q) use ($request) {
+                $q->where('estado', $request->estado_tarea);
+            });
+            $filtrosActivos['Estado Tarea'] = ucfirst(str_replace('_', ' ', $request->estado_tarea));
+        }
+        if ($request->filled('prioridad_tarea')) {
+            $query->whereHas('tareas', function (Builder $q) use ($request) {
+                $q->where('prioridad', $request->prioridad_tarea);
+            });
+            $filtrosActivos['Prioridad Tarea'] = ucfirst($request->prioridad_tarea);
+        }
+
+        // Filtros Avanzados
+        if ($request->filled('con_retraso')) {
+            if ($request->con_retraso == '1') {
+                $query->where('fecha_fin', '<', now())->where('estado', '!=', 'completado');
+                $filtrosActivos['Con Retraso'] = 'Sí';
+            } else {
+                $query->where(function($q) {
+                    $q->where('fecha_fin', '>=', now())->orWhere('estado', 'completado');
+                });
+                $filtrosActivos['Con Retraso'] = 'No';
+            }
+        }
+        if ($request->filled('progreso_min')) {
+            $filtrosActivos['Progreso Mínimo'] = $request->progreso_min . '%';
+        }
+        if ($request->filled('progreso_max')) {
+            $filtrosActivos['Progreso Máximo'] = $request->progreso_max . '%';
         }
 
         $proyectos = $query
             ->orderBy('estado', 'asc')
             ->orderBy('prioridad', 'desc')
             ->get();
+
+        // Filtrar por progreso después de obtener los resultados
+        if ($request->filled('progreso_min')) {
+            $proyectos = $proyectos->filter(fn($p) => $p->progreso_general >= $request->progreso_min);
+        }
+        if ($request->filled('progreso_max')) {
+            $proyectos = $proyectos->filter(fn($p) => $p->progreso_general <= $request->progreso_max);
+        }
 
         $proyectosData = $proyectos->map(fn ($proyecto) => [
             'id' => $proyecto->id,
@@ -136,6 +211,7 @@ class ReporteController extends Controller
             'usuario_email' => $user->email,
             'usuario_rol' => $user->roles->pluck('name')->first() ?? 'Usuario',
             'dirigido_a' => $user->name,
+            'filtrosActivos' => $filtrosActivos,
 
             // Estadísticas generales
             'total_proyectos' => $totalProyectos,
@@ -155,6 +231,12 @@ class ReporteController extends Controller
             'empleados_pendientes' => $empleadosPendientes,
         ]);
 
-        return $pdf->download('reporte-proyectos-' . now()->format('Y-m-d') . '.pdf');
+        $fileName = 'reporte-proyectos-' . now()->format('Y-m-d') . '.pdf';
+
+        if ($request->input('output') === 'stream') {
+            return $pdf->stream($fileName);
+        }
+
+        return $pdf->download($fileName);
     }
 }

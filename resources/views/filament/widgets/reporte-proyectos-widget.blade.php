@@ -1,23 +1,23 @@
 <x-filament-widgets::widget>
     <x-filament::section>
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-            <div style="flex: 1;">
-                <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">
-                    📊 Reporte de Proyectos
+        <div class="space-y-4">
+            <div class="text-center">
+                <h3 class="text-lg font-semibold mb-2">
+                    📊 Reportes de Proyectos
                 </h3>
-                <p style="font-size: 0.875rem; opacity: 0.7;">
-                    Genera un reporte en PDF con el estado y progreso de todos tus proyectos.
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Descarga el reporte general de todos los proyectos según tus permisos.
                 </p>
             </div>
-            <div>
+
+            <div class="flex items-center justify-center pt-4">
                 <x-filament::button
-                    href="{{ route('reporte.proyectos.pdf') }}"
-                    target="_blank"
-                    tag="a"
-                    icon="heroicon-o-arrow-down-tray"
+                    wire:click="descargarReporteGeneral"
                     color="primary"
+                    size="lg"
+                    icon="heroicon-o-document-arrow-down"
                 >
-                    Descargar Reporte PDF
+                    Descargar Reporte General
                 </x-filament::button>
             </div>
         </div>

@@ -390,7 +390,7 @@
     <div class="header">
         <div class="header-top">
             <div class="header-logo">
-                <img src="{{ public_path('logo.svg') }}" alt="Logo Empresa">
+                <img src="{{ public_path('favicon.svg') }}" alt="Logo Empresa">
             </div>
             <div class="header-title">
                 <h1>Reporte de Proyectos</h1>
@@ -420,6 +420,19 @@
                 </div>
             </div>
         </div>
+
+        @if(count($filtrosActivos) > 0)
+            <div class="header-info" style="margin-top: 10px; border-color: #3b82f6;">
+                <div class="header-info-grid">
+                    @foreach($filtrosActivos as $filtro => $valor)
+                        <div class="header-info-item">
+                            <div class="header-info-label">Filtro: {{ $filtro }}</div>
+                            <div class="header-info-value" style="font-weight: bold; color: #1e40af;">{{ $valor }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 
     <!-- RESUMEN EJECUTIVO -->
@@ -720,7 +733,7 @@
 
     <div class="footer">
         <div class="footer-logo">
-            <img src="{{ public_path('logo.svg') }}" alt="Logo">
+            <img src="{{ public_path('favicon.svg') }}" alt="Logo">
         </div>
         <p><strong>Sistema de Gestión de Proyectos</strong></p>
         <p>Este reporte fue generado automáticamente el {{ $fecha_generacion }}</p>
